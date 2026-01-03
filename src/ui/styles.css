@@ -61,12 +61,32 @@ html, body {
   flex-shrink: 0;
 }
 
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-xs);
+}
+
 .status-resources {
   display: flex;
   gap: var(--space-md);
   font-family: var(--font-mono);
   font-size: 14px;
-  margin-bottom: var(--space-xs);
+}
+
+.settings-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+.settings-btn:hover {
+  color: var(--text-primary);
 }
 
 .resource {
@@ -388,6 +408,204 @@ h3 {
   overflow-y: auto;
 }
 
+.view-journey {
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.journey-dest {
+  color: var(--accent);
+  margin-bottom: var(--space-lg);
+}
+
+.journey-progress {
+  margin-bottom: var(--space-lg);
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
+
+.progress-text {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.journey-flavor {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.achievement-toast {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--success);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  z-index: 100;
+  animation: toastSlide 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+@keyframes toastSlide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.achievement-toast .achievement-icon {
+  font-size: 24px;
+}
+
+.achievement-toast .achievement-label {
+  font-size: 10px;
+  color: var(--success);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.achievement-toast .achievement-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.action-toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+  font-size: 14px;
+  z-index: 100;
+  animation: toastSlide 0.3s ease-out;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.view-achievements {
+  height: 100%;
+}
+
+.achievement-progress {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: var(--space-md);
+}
+
+.achievement-list {
+  list-style: none;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.achievement-item.locked {
+  opacity: 0.5;
+}
+
+.achievement-item.unlocked {
+  border-left: 3px solid var(--success);
+}
+
+.achievement-item .achievement-icon {
+  font-size: 28px;
+  width: 40px;
+  text-align: center;
+}
+
+.achievement-details {
+  flex: 1;
+}
+
+.achievement-details .achievement-name {
+  display: block;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.achievement-details .achievement-desc {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.view-gameover {
+  text-align: center;
+  padding: var(--space-xl);
+}
+
+.view-gameover h1 {
+  color: var(--danger);
+  margin-bottom: var(--space-md);
+}
+
+.gameover-reason {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+
+.gameover-stats {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.gameover-stats p {
+  margin-bottom: var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: 14px;
+}
+
+.tutorial-hint {
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-lg);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.tutorial-hint strong {
+  color: var(--accent);
+}
+
+.tutorial-hint em {
+  color: var(--warning);
+  font-style: normal;
+}
+
 @media (min-width: 481px) {
   .game-container {
     border-left: 1px solid var(--bg-tertiary);
@@ -404,6 +622,9 @@ h3 {
     --text-secondary: #505060;
     --text-muted: #909098;
     --accent: #2a6ad0;
-    --accent-dim: #4a8aff;
+    --accent-dim: #a8c8ff;
+    --warning: #cc8800;
+    --danger: #cc3333;
+    --success: #339955;
   }
 }

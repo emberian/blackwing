@@ -1,10 +1,18 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createInitialState } from '../src/core/init.js';
-import { simulateOffline, compressEvents } from '../src/core/simulate.js';
+import { 
+  calculateJourneyEventCount, 
+  calculateFuelCost,
+  processJourneyWear,
+  processCargoDecay,
+  tickContractTimers,
+  advanceCycle,
+  incrementJumps,
+} from '../src/core/simulate.js';
 import { dispatch } from '../src/core/actions.js';
 import { buildCardDefMap } from '../src/content/cards/index.js';
 import { DEFAULT_CONFIG, createId } from '../src/core/types.js';
-import type { GameState, CardDef } from '../src/core/types.js';
+import type { GameState, CardDef, CardInstance, CardInstanceId } from '../src/core/types.js';
 
 describe('Game Core', () => {
   let state: GameState;
@@ -17,8 +25,8 @@ describe('Game Core', () => {
 
   describe('Initial State', () => {
     it('creates valid initial state', () => {
-      expect(state.schemaVersion).toBe(1);
-      expect(state.resources.credits).toBe(100);
+      expect(state.schemaVersion).toBe(2);
+      expect(state.resources.credits).toBe(80);
       expect(state.ship.name).toBe('Holdfast');
       expect(state.chronicle.length).toBe(1);
     });
@@ -29,59 +37,183 @@ describe('Game Core', () => {
 
     it('has correct initial resources', () => {
       expect(state.resources).toEqual({
-        credits: 100,
-        fuel: 50,
-        supplies: 30,
+        credits: 80,
+        fuel: 40,
+        supplies: 25,
         hull: 100,
-        morale: 75,
+        morale: 70,
       });
+    });
+
+    it('has correct initial time state', () => {
+      expect(state.time.cycle).toBe(0);
+      expect(state.time.jumpsCompleted).toBe(0);
     });
   });
 
-  describe('Simulation', () => {
-    it('handles zero tick simulation', () => {
-      const result = simulateOffline(state, cardDefs, state.time.lastSimulatedAt);
-      expect(result.ticksSimulated).toBe(0);
-      expect(result.events).toHaveLength(0);
+  describe('Journey Simulation', () => {
+    it('calculates journey event count within config bounds', () => {
+      const eventCount = calculateJourneyEventCount(state, createId.port('port_frontier_station'), DEFAULT_CONFIG);
+      expect(eventCount).toBeGreaterThanOrEqual(DEFAULT_CONFIG.journeyEventCount.min);
+      expect(eventCount).toBeLessThanOrEqual(DEFAULT_CONFIG.journeyEventCount.max);
     });
 
-    it('simulates time passage', () => {
-      const futureTime = state.time.lastSimulatedAt + DEFAULT_CONFIG.msPerTick * 5;
-      const result = simulateOffline(state, cardDefs, futureTime);
-      
-      expect(result.ticksSimulated).toBe(5);
-      expect(result.state.time.ticks).toBe(5);
+    it('calculates fuel cost with base config', () => {
+      const fuelCost = calculateFuelCost(state, cardDefs, DEFAULT_CONFIG);
+      expect(fuelCost).toBe(DEFAULT_CONFIG.baseFuelPerJump);
     });
 
-    it('consumes supplies over time', () => {
-      const futureTime = state.time.lastSimulatedAt + DEFAULT_CONFIG.msPerTick * 10;
-      const result = simulateOffline(state, cardDefs, futureTime);
+    it('reduces fuel cost with efficient drives module', () => {
+      // Add an efficient drives module to the ship
+      const moduleId = 'test-module' as CardInstanceId;
+      const moduleInstance: CardInstance = {
+        instanceId: moduleId,
+        cardDefId: createId.cardDef('module_efficient_drives'),
+        level: 1,
+        condition: 100,
+        mods: [],
+        acquiredAt: { cycle: 0 },
+      };
       
-      expect(result.state.resources.supplies).toBeLessThan(state.resources.supplies);
+      state = {
+        ...state,
+        cards: {
+          ...state.cards,
+          instances: { [moduleId]: moduleInstance },
+        },
+        ship: {
+          ...state.ship,
+          modules: {
+            ...state.ship.modules,
+            propulsion: moduleId,
+          },
+        },
+      };
+      
+      const fuelCost = calculateFuelCost(state, cardDefs, DEFAULT_CONFIG);
+      expect(fuelCost).toBeLessThan(DEFAULT_CONFIG.baseFuelPerJump);
     });
 
-    it('caps catch-up ticks', () => {
-      const veryFuture = state.time.lastSimulatedAt + DEFAULT_CONFIG.msPerTick * 10000;
-      const result = simulateOffline(state, cardDefs, veryFuture);
+    it('processes journey wear - consumes supplies and damages hull', () => {
+      const initialSupplies = state.resources.supplies;
+      const initialHull = state.resources.hull;
       
-      expect(result.ticksSimulated).toBe(DEFAULT_CONFIG.maxCatchUpTicks);
+      const newState = processJourneyWear(state, DEFAULT_CONFIG);
+      
+      expect(newState.resources.supplies).toBeLessThan(initialSupplies);
+      expect(newState.resources.hull).toBeLessThan(initialHull);
     });
 
-    it('compresses resource events', () => {
-      const events = [
-        { type: 'resource_change' as const, resource: 'credits' as const, delta: 10, reason: 'a' },
-        { type: 'resource_change' as const, resource: 'credits' as const, delta: 5, reason: 'b' },
-        { type: 'resource_change' as const, resource: 'fuel' as const, delta: -2, reason: 'c' },
-        { type: 'arrival' as const, portId: createId.port('test') },
-      ];
+    it('reduces morale when supplies run out', () => {
+      state = {
+        ...state,
+        resources: { ...state.resources, supplies: 1 },
+      };
       
-      const compressed = compressEvents(events);
-      const creditEvents = compressed.filter(e => e.type === 'resource_change' && e.resource === 'credits');
-      const fuelEvents = compressed.filter(e => e.type === 'resource_change' && e.resource === 'fuel');
+      const newState = processJourneyWear(state, DEFAULT_CONFIG);
       
-      expect(creditEvents).toHaveLength(1);
-      expect(creditEvents[0]!.type === 'resource_change' && creditEvents[0]!.delta).toBe(15);
-      expect(fuelEvents).toHaveLength(1);
+      expect(newState.resources.supplies).toBe(0);
+      expect(newState.resources.morale).toBeLessThan(state.resources.morale);
+    });
+
+    it('advances cycle', () => {
+      const newState = advanceCycle(state);
+      expect(newState.time.cycle).toBe(state.time.cycle + 1);
+    });
+
+    it('increments jumps', () => {
+      const newState = incrementJumps(state);
+      expect(newState.time.jumpsCompleted).toBe(state.time.jumpsCompleted + 1);
+    });
+  });
+
+  describe('Cargo Decay', () => {
+    it('can decay cargo with decayChance', () => {
+      // Add a cargo with decay chance
+      const cargoId = 'test-cargo' as CardInstanceId;
+      const cargoInstance: CardInstance = {
+        instanceId: cargoId,
+        cardDefId: createId.cardDef('cargo_cryo_seeds'), // Has 15% decay chance
+        level: 1,
+        condition: 100,
+        mods: [],
+        acquiredAt: { cycle: 0 },
+      };
+      
+      state = {
+        ...state,
+        cards: {
+          ...state.cards,
+          instances: { [cargoId]: cargoInstance },
+          collection: [cargoId],
+        },
+      };
+      
+      // Run decay many times - should eventually decay
+      let hasDecayed = false;
+      for (let i = 0; i < 100; i++) {
+        const result = processCargoDecay(state, cardDefs);
+        if (result.decayedCards.length > 0 || 
+            (result.state.cards.instances[cargoId]?.condition ?? 0) < 100) {
+          hasDecayed = true;
+          break;
+        }
+      }
+      
+      expect(hasDecayed).toBe(true);
+    });
+  });
+
+  describe('Contract Timers', () => {
+    it('ticks down contract cycles remaining', () => {
+      // Accept a contract first
+      const contractResult = dispatch(
+        state,
+        { type: 'CONTRACT_ACCEPT', payload: { cardDefId: createId.cardDef('contract_standard_delivery') } },
+        cardDefs
+      );
+      
+      expect(contractResult.success).toBe(true);
+      const contractId = contractResult.state.cards.activeContracts[0];
+      const initialCycles = contractResult.state.cards.instances[contractId!]?.cyclesRemaining;
+      
+      // Tick the contract
+      const tickResult = tickContractTimers(contractResult.state, cardDefs);
+      const newCycles = tickResult.state.cards.instances[contractId!]?.cyclesRemaining;
+      
+      expect(newCycles).toBe((initialCycles ?? 0) - 1);
+    });
+
+    it('expires contracts when cycles reach zero', () => {
+      // Accept a contract
+      const contractResult = dispatch(
+        state,
+        { type: 'CONTRACT_ACCEPT', payload: { cardDefId: createId.cardDef('contract_standard_delivery') } },
+        cardDefs
+      );
+      
+      const contractId = contractResult.state.cards.activeContracts[0]!;
+      
+      // Set cycles to 1 so it expires on next tick
+      let testState = {
+        ...contractResult.state,
+        cards: {
+          ...contractResult.state.cards,
+          instances: {
+            ...contractResult.state.cards.instances,
+            [contractId]: {
+              ...contractResult.state.cards.instances[contractId]!,
+              cyclesRemaining: 1,
+            },
+          },
+        },
+      };
+      
+      const tickResult = tickContractTimers(testState, cardDefs);
+      
+      expect(tickResult.expiredContracts.length).toBe(1);
+      expect(tickResult.state.cards.activeContracts).not.toContain(contractId);
+      expect(tickResult.state.stats.contractsFailed).toBe(1);
     });
   });
 
@@ -132,7 +264,6 @@ describe('Game Core', () => {
         );
         
         expect(result.success).toBe(true);
-        expect(result.state.time.inTransit).toBe(true);
         expect(result.state.resources.fuel).toBeLessThan(state.resources.fuel);
       });
 
@@ -148,16 +279,15 @@ describe('Game Core', () => {
         expect(result.message).toContain('Insufficient fuel');
       });
 
-      it('rejects travel while in transit', () => {
-        state.time.inTransit = true;
+      it('rejects travel to current location', () => {
         const result = dispatch(
           state,
-          { type: 'TRAVEL', payload: { destination: createId.port('port_frontier_station') } },
+          { type: 'TRAVEL', payload: { destination: createId.port('port_haven_prime') } },
           cardDefs
         );
         
         expect(result.success).toBe(false);
-        expect(result.message).toContain('Already in transit');
+        expect(result.message).toContain('Already at this location');
       });
     });
 
@@ -172,6 +302,33 @@ describe('Game Core', () => {
         expect(result.success).toBe(true);
         expect(result.state.cards.activeCrew.length).toBe(1);
         expect(result.state.cards.deck.length).toBe(1);
+      });
+    });
+
+    describe('Contracts', () => {
+      it('allows accepting contracts', () => {
+        const result = dispatch(
+          state,
+          { type: 'CONTRACT_ACCEPT', payload: { cardDefId: createId.cardDef('contract_standard_delivery') } },
+          cardDefs
+        );
+        
+        expect(result.success).toBe(true);
+        expect(result.state.cards.activeContracts.length).toBe(1);
+      });
+
+      it('tracks cycles remaining on contracts', () => {
+        const result = dispatch(
+          state,
+          { type: 'CONTRACT_ACCEPT', payload: { cardDefId: createId.cardDef('contract_standard_delivery') } },
+          cardDefs
+        );
+        
+        const contractId = result.state.cards.activeContracts[0];
+        const contract = result.state.cards.instances[contractId!];
+        
+        expect(contract?.cyclesRemaining).toBeDefined();
+        expect(contract?.cyclesRemaining).toBeGreaterThan(0);
       });
     });
 
@@ -225,7 +382,7 @@ describe('Card Definitions', () => {
     
     expect(navigator).toBeDefined();
     expect(navigator?.type).toBe('crew');
-    expect(navigator?.lifespan).toBeGreaterThan(0);
+    expect(navigator?.effects.modifiers?.journeySpeed).toBeDefined();
   });
 
   it('has valid module cards', () => {
@@ -235,5 +392,14 @@ describe('Card Definitions', () => {
     expect(sensor).toBeDefined();
     expect(sensor?.type).toBe('module');
     expect(sensor?.installRequirements?.slotType).toBe('sensor');
+  });
+
+  it('has valid contract cards with cycle limits', () => {
+    const cardDefs = buildCardDefMap();
+    const contract = cardDefs.get(createId.cardDef('contract_standard_delivery'));
+    
+    expect(contract).toBeDefined();
+    expect(contract?.type).toBe('contract');
+    expect(contract?.contractTerms?.cycleLimit).toBeGreaterThan(0);
   });
 });

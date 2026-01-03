@@ -8,10 +8,13 @@ import {
   type CardInstanceId,
 } from './types.js';
 
+export type EventContextType = 'journey' | 'port';
+
 export interface EventContext {
   state: GameState;
   cardDefs: Map<string, CardDef>;
   rng: () => number;
+  contextType: EventContextType;
 }
 
 export interface TriggeredEvent {
@@ -44,8 +47,9 @@ function meetsRequirements(scenelet: Scenelet, context: EventContext): boolean {
   const req = scenelet.requirements;
   const state = context.state;
   
-  if (req.location === 'transit' && !state.time.inTransit) return false;
-  if (req.location === 'port' && state.time.inTransit) return false;
+  if (req.context && req.context !== 'any' && req.context !== context.contextType) {
+    return false;
+  }
   
   if (req.minResources) {
     for (const [key, min] of Object.entries(req.minResources)) {
@@ -160,7 +164,7 @@ export function applyEffects(
         level: 1,
         condition: 100,
         mods: [],
-        acquiredAt: { era: newState.time.era, year: newState.time.year },
+        acquiredAt: { cycle: newState.time.cycle },
       };
       collection.push(instanceId);
     }
@@ -201,7 +205,7 @@ export function applyEffects(
     const entry: ChronicleEntry = {
       id: createId.chronicleEntry(`event-${Date.now()}`),
       type: 'encounter',
-      timestamp: { era: newState.time.era, year: newState.time.year },
+      timestamp: { cycle: newState.time.cycle },
       title: effects.addChronicle.title,
       text: effects.addChronicle.text,
       tags: ['event'],

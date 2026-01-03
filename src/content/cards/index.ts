@@ -12,9 +12,6 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['mineral'],
     effects: {},
     baseValue: 15,
-    idleBehavior: {
-      generates: { credits: 0.1 },
-    },
   },
   {
     id: id('cargo_processed_metals'),
@@ -32,7 +29,7 @@ export const CARGO_CARDS: CardDef[] = [
     id: id('cargo_starship_components'),
     type: 'cargo',
     name: 'Starship Components',
-    description: 'Precision-manufactured parts. Worth their weight in decades.',
+    description: 'Precision-manufactured parts. Worth their weight in gold.',
     rarity: 'uncommon',
     tags: ['tech'],
     effects: {},
@@ -48,8 +45,8 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['organic', 'frozen'],
     effects: {},
     baseValue: 80,
-    idleBehavior: {
-      decayRate: 0.005,
+    journeyBehavior: {
+      decayChance: 0.15,
     },
   },
   {
@@ -63,15 +60,15 @@ export const CARGO_CARDS: CardDef[] = [
       modifiers: { morale: 0.05 },
     },
     baseValue: 45,
-    idleBehavior: {
-      decayRate: 0.002,
+    journeyBehavior: {
+      decayChance: 0.05,
     },
   },
   {
     id: id('cargo_memory_cores'),
     type: 'cargo',
     name: 'Memory Cores',
-    description: 'Crystalline data stores containing centuries of knowledge.',
+    description: 'Crystalline data stores containing vast archives of knowledge.',
     flavorText: 'The thoughts of the dead, preserved in light.',
     rarity: 'rare',
     tags: ['data', 'ancient'],
@@ -89,9 +86,6 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['luxury', 'cultural'],
     effects: {},
     baseValue: 90,
-    idleBehavior: {
-      generates: { morale: 0.02 },
-    },
   },
   {
     id: id('cargo_contraband'),
@@ -103,8 +97,8 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['contraband'],
     effects: {},
     baseValue: 150,
-    idleBehavior: {
-      eventChance: 0.01,
+    journeyBehavior: {
+      eventChance: 0.2,
     },
   },
   {
@@ -116,9 +110,9 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['volatile', 'tech'],
     effects: {},
     baseValue: 300,
-    idleBehavior: {
-      decayRate: 0.01,
-      eventChance: 0.005,
+    journeyBehavior: {
+      decayChance: 0.2,
+      eventChance: 0.15,
     },
   },
   {
@@ -130,9 +124,8 @@ export const CARGO_CARDS: CardDef[] = [
     tags: ['living', 'organic', 'frozen'],
     effects: {},
     baseValue: 180,
-    idleBehavior: {
-      consumes: { supplies: 0.05 },
-      decayRate: 0.003,
+    journeyBehavior: {
+      decayChance: 0.1,
     },
   },
   {
@@ -155,14 +148,13 @@ export const CREW_CARDS: CardDef[] = [
     id: id('crew_navigator'),
     type: 'crew',
     name: 'Navigator',
-    description: 'Charts courses through the long dark. Essential for efficient travel.',
+    description: 'Charts courses through the void. Essential for efficient travel.',
     rarity: 'common',
     tags: ['navigation'],
     effects: {
-      modifiers: { jumpSpeed: 0.1 },
+      modifiers: { journeySpeed: 0.1 },
     },
     baseValue: 50,
-    lifespan: 80,
   },
   {
     id: id('crew_engineer'),
@@ -175,7 +167,6 @@ export const CREW_CARDS: CardDef[] = [
       modifiers: { hullIntegrity: 0.1, fuelEfficiency: 0.05 },
     },
     baseValue: 50,
-    lifespan: 75,
   },
   {
     id: id('crew_medic'),
@@ -188,7 +179,6 @@ export const CREW_CARDS: CardDef[] = [
       modifiers: { morale: 0.1 },
     },
     baseValue: 60,
-    lifespan: 85,
   },
   {
     id: id('crew_quartermaster'),
@@ -201,7 +191,6 @@ export const CREW_CARDS: CardDef[] = [
       modifiers: { cargoCapacity: 0.15, creditMultiplier: 0.05 },
     },
     baseValue: 70,
-    lifespan: 70,
   },
   {
     id: id('crew_gunner'),
@@ -214,7 +203,6 @@ export const CREW_CARDS: CardDef[] = [
       grantsShipTags: ['combat'],
     },
     baseValue: 65,
-    lifespan: 60,
   },
   {
     id: id('crew_ai_fragment'),
@@ -225,11 +213,10 @@ export const CREW_CARDS: CardDef[] = [
     rarity: 'rare',
     tags: ['tech', 'ancient'],
     effects: {
-      modifiers: { jumpSpeed: 0.15, fuelEfficiency: 0.1 },
+      modifiers: { journeySpeed: 0.15, fuelEfficiency: 0.1 },
       grantsShipTags: ['tech'],
     },
     baseValue: 200,
-    lifespan: -1,
   },
   {
     id: id('crew_stowaway'),
@@ -241,7 +228,6 @@ export const CREW_CARDS: CardDef[] = [
     tags: ['survival'],
     effects: {},
     baseValue: 0,
-    lifespan: 70,
   },
 ];
 
@@ -296,12 +282,11 @@ export const MODULE_CARDS: CardDef[] = [
     id: id('module_cryo_bay'),
     type: 'module',
     name: 'Cryo Bay',
-    description: 'Sleep through the centuries. Wake as if no time has passed.',
-    flavorText: 'Death deferred is not life preserved.',
+    description: 'Preserves perishable cargo during transit.',
     rarity: 'uncommon',
     tags: ['life-support', 'frozen'],
     effects: {
-      unlocks: ['cryo_sleep'],
+      unlocks: ['preserve_cargo'],
       grantsShipTags: ['frozen'],
     },
     baseValue: 200,
@@ -351,8 +336,8 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery'],
     effects: {},
     contractTerms: {
-      destination: 'port_haven_prime' as any,
-      timeLimit: 100,
+      destination: 'port_frontier_station' as any,
+      cycleLimit: 10,
       reward: { credits: 200 },
     },
   },
@@ -367,9 +352,9 @@ export const CONTRACT_CARDS: CardDef[] = [
     contractTerms: {
       destination: 'port_frontier_station' as any,
       cargoRequired: { cardDefId: id('cargo_medical_supplies'), quantity: 3 },
-      timeLimit: 50,
+      cycleLimit: 8,
       reward: { credits: 500, morale: 10 },
-      penalty: { morale: -20 },
+      penalty: { morale: 20 },
       reputationReward: { faction: 'faction_frontier_alliance' as any, amount: 15 },
     },
   },
@@ -384,28 +369,28 @@ export const CONTRACT_CARDS: CardDef[] = [
     effects: {},
     contractTerms: {
       destination: 'port_shadow_market' as any,
-      timeLimit: 75,
+      cycleLimit: 6,
       reward: { credits: 400 },
-      penalty: { credits: -100 },
+      penalty: { credits: 100 },
     },
   },
 ];
 
-export const ECHO_CARDS: CardDef[] = [
+export const RELIC_CARDS: CardDef[] = [
   {
-    id: id('echo_founders_manifest'),
+    id: id('relic_founders_manifest'),
     type: 'echo',
     name: 'Founder\'s Manifest',
-    description: 'The original cargo list. Your ship\'s first cargo, centuries ago.',
+    description: 'The original cargo list. Your ship\'s first cargo, long ago.',
     flavorText: 'Names of things that no longer exist.',
     rarity: 'legendary',
-    tags: ['memory', 'lineage'],
+    tags: ['memory', 'artifact'],
     effects: {
       modifiers: { creditMultiplier: 0.05 },
     },
   },
   {
-    id: id('echo_star_chart_fragment'),
+    id: id('relic_star_chart_fragment'),
     type: 'echo',
     name: 'Star Chart Fragment',
     description: 'Part of an ancient navigation system. Points to somewhere.',
@@ -416,13 +401,13 @@ export const ECHO_CARDS: CardDef[] = [
     },
   },
   {
-    id: id('echo_line_token'),
+    id: id('relic_void_compass'),
     type: 'echo',
-    name: 'Line Token',
-    description: 'Recognition from a Shatterling Line. You are known.',
-    flavorText: 'The Lines remember across millennia.',
+    name: 'Void Compass',
+    description: 'Points toward something. No one knows what.',
+    flavorText: 'It always points the same direction. Always.',
     rarity: 'legendary',
-    tags: ['lineage', 'artifact'],
+    tags: ['artifact', 'ancient'],
     effects: {},
   },
 ];
@@ -432,7 +417,7 @@ export const ALL_CARDS: CardDef[] = [
   ...CREW_CARDS,
   ...MODULE_CARDS,
   ...CONTRACT_CARDS,
-  ...ECHO_CARDS,
+  ...RELIC_CARDS,
 ];
 
 export function buildCardDefMap(cards: CardDef[] = ALL_CARDS): Map<string, CardDef> {

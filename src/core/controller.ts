@@ -1,26 +1,45 @@
-import type { GameState, GameAction, CardDef, Scenelet } from './types.js';
+import type { GameState, GameAction, CardDef, Scenelet, PortId, ChronicleEntry, AchievementId } from './types.js';
 import { dispatch } from './actions.js';
-import { simulateOffline, compressEvents, type SimulationResult } from './simulate.js';
-import { selectEvent, applyEffects, createSeededRng, type TriggeredEvent } from './events.js';
+import { 
+  calculateJourneyEventCount, 
+  calculateFuelCost,
+  processJourneyWear, 
+  processCargoDecay, 
+  tickContractTimers,
+  advanceCycle,
+  incrementJumps,
+} from './simulate.js';
+import { selectEvent, applyEffects, createSeededRng, type TriggeredEvent, type EventContextType } from './events.js';
 import { createInitialState } from './init.js';
-import { DEFAULT_CONFIG } from './types.js';
+import { DEFAULT_CONFIG, createId } from './types.js';
+import { checkAchievements, getAchievement } from '../content/achievements/index.js';
 
 const SAVE_KEY = 'cargo_hold_save';
-const AUTOSAVE_INTERVAL = 30_000;
+
+export interface JourneyState {
+  destination: PortId;
+  eventsRemaining: number;
+  totalEvents: number;
+}
 
 export interface GameController {
   getState(): GameState;
-  dispatch(action: GameAction): void;
+  dispatch(action: GameAction): { success: boolean; message?: string | undefined };
+  travel(destination: PortId): { success: boolean; message?: string };
   save(): void;
   load(): boolean;
   reset(): void;
   subscribe(listener: StateListener): () => void;
-  triggerEvent(): TriggeredEvent | null;
+  triggerPortEvent(): TriggeredEvent | null;
   resolveEventChoice(choiceIndex: number): void;
   getCurrentEvent(): TriggeredEvent | null;
+  getJourneyState(): JourneyState | null;
+  isGameOver(): boolean;
+  getNewAchievements(): AchievementId[];
+  clearNewAchievements(): void;
 }
 
-export type StateListener = (state: GameState, events: SimulationResult['events']) => void;
+export type StateListener = (state: GameState) => void;
 
 export function createGameController(
   cardDefs: Map<string, CardDef>,
@@ -28,38 +47,52 @@ export function createGameController(
 ): GameController {
   let state = createInitialState();
   let currentEvent: TriggeredEvent | null = null;
+  let journeyState: JourneyState | null = null;
+  let pendingAchievements: AchievementId[] = [];
   const listeners = new Set<StateListener>();
-  let autosaveTimer: ReturnType<typeof setInterval> | null = null;
-  let tickTimer: ReturnType<typeof setInterval> | null = null;
 
-  function notify(events: SimulationResult['events'] = []) {
+  function processAchievements() {
+    const newlyUnlocked = checkAchievements(state);
+    if (newlyUnlocked.length > 0) {
+      pendingAchievements.push(...newlyUnlocked);
+      
+      const unlockedAt = { ...state.achievements.unlockedAt };
+      for (const id of newlyUnlocked) {
+        unlockedAt[id] = state.time.cycle;
+      }
+      
+      state = {
+        ...state,
+        achievements: {
+          unlocked: [...state.achievements.unlocked, ...newlyUnlocked],
+          unlockedAt,
+        },
+      };
+      
+      for (const id of newlyUnlocked) {
+        const achievement = getAchievement(id);
+        if (achievement) {
+          const chronicle: ChronicleEntry = {
+            id: createId.chronicleEntry(`achievement-${id}-${state.time.cycle}`),
+            type: 'milestone',
+            timestamp: { cycle: state.time.cycle },
+            title: `Achievement: ${achievement.name}`,
+            text: achievement.description,
+            tags: ['achievement'],
+          };
+          state = {
+            ...state,
+            chronicle: [...state.chronicle, chronicle],
+          };
+        }
+      }
+    }
+  }
+
+  function notify() {
     for (const listener of listeners) {
-      listener(state, events);
+      listener(state);
     }
-  }
-
-  function processOfflineTime() {
-    const now = Date.now();
-    const result = simulateOffline(state, cardDefs, now, DEFAULT_CONFIG);
-    
-    if (result.ticksSimulated > 0) {
-      state = result.state;
-      const compressed = compressEvents(result.events);
-      notify(compressed);
-    }
-  }
-
-  function startTimers() {
-    if (tickTimer) clearInterval(tickTimer);
-    if (autosaveTimer) clearInterval(autosaveTimer);
-
-    tickTimer = setInterval(() => {
-      processOfflineTime();
-    }, DEFAULT_CONFIG.msPerTick);
-
-    autosaveTimer = setInterval(() => {
-      save();
-    }, AUTOSAVE_INTERVAL);
   }
 
   function save() {
@@ -79,11 +112,11 @@ export function createGameController(
       const loaded = JSON.parse(serialized) as GameState;
       
       if (loaded.schemaVersion !== state.schemaVersion) {
-        console.warn('Save version mismatch, may need migration');
+        console.warn('Save version mismatch, starting fresh');
+        return false;
       }
 
       state = loaded;
-      processOfflineTime();
       notify();
       return true;
     } catch (e) {
@@ -96,6 +129,7 @@ export function createGameController(
     localStorage.removeItem(SAVE_KEY);
     state = createInitialState();
     currentEvent = null;
+    journeyState = null;
     notify();
   }
 
@@ -104,20 +138,174 @@ export function createGameController(
     
     if (result.success) {
       state = result.state;
+      processAchievements();
+      save();
       notify();
     }
     
-    return result;
+    return { success: result.success, message: result.message };
   }
 
-  function triggerEvent(): TriggeredEvent | null {
-    if (currentEvent) return currentEvent;
+  function travel(destination: PortId): { success: boolean; message?: string } {
+    if (journeyState) {
+      return { success: false, message: 'Already traveling' };
+    }
+
+    if (state.world.currentLocation === destination) {
+      return { success: false, message: 'Already at this location' };
+    }
+
+    const fuelCost = calculateFuelCost(state, cardDefs, DEFAULT_CONFIG);
+    if (state.resources.fuel < fuelCost) {
+      return { success: false, message: 'Insufficient fuel' };
+    }
+
+    state = {
+      ...state,
+      resources: {
+        ...state.resources,
+        fuel: state.resources.fuel - fuelCost,
+      },
+    };
+
+    const eventCount = calculateJourneyEventCount(state, destination, DEFAULT_CONFIG);
+    
+    journeyState = {
+      destination,
+      eventsRemaining: eventCount,
+      totalEvents: eventCount,
+    };
+
+    const port = state.world.ports[destination];
+    const chronicle: ChronicleEntry = {
+      id: createId.chronicleEntry(`departure-${destination}-${state.time.cycle}`),
+      type: 'departure',
+      timestamp: { cycle: state.time.cycle },
+      title: `Departed for ${port?.name ?? 'Unknown'}`,
+      text: `The hold is sealed. The jump drive spools. ${port?.name ?? 'Our destination'} awaits.`,
+      tags: ['travel', 'departure'],
+      refs: { portId: destination },
+    };
+    
+    state = {
+      ...state,
+      chronicle: [...state.chronicle, chronicle],
+    };
+
+    triggerNextJourneyEvent();
+    
+    return { success: true, message: `Jumping to ${port?.name ?? 'unknown'}` };
+  }
+
+  function triggerNextJourneyEvent() {
+    if (!journeyState) return;
+
+    if (journeyState.eventsRemaining <= 0) {
+      completeJourney();
+      return;
+    }
+
+    state = processJourneyWear(state, DEFAULT_CONFIG);
+    
+    const decayResult = processCargoDecay(state, cardDefs);
+    state = decayResult.state;
+    
+    const contractResult = tickContractTimers(state, cardDefs);
+    state = contractResult.state;
+
+    state = advanceCycle(state);
 
     const rng = createSeededRng(state.rngState);
     state = { ...state, rngState: state.rngState + 1 };
 
-    const context = { state, cardDefs, rng };
-    const event = selectEvent(scenelets, context);
+    const context = { state, cardDefs, rng, contextType: 'journey' as EventContextType };
+    const journeyScenelets = scenelets.filter(s => 
+      !s.requirements.context || s.requirements.context === 'journey' || s.requirements.context === 'any'
+    );
+    
+    const event = selectEvent(journeyScenelets, context);
+    
+    journeyState = {
+      ...journeyState,
+      eventsRemaining: journeyState.eventsRemaining - 1,
+    };
+
+    if (event) {
+      currentEvent = event;
+    } else {
+      if (journeyState.eventsRemaining > 0) {
+        triggerNextJourneyEvent();
+      } else {
+        completeJourney();
+      }
+    }
+
+    notify();
+  }
+
+  function completeJourney() {
+    if (!journeyState) return;
+
+    const destination = journeyState.destination;
+    const port = state.world.ports[destination];
+
+    state = incrementJumps(state);
+
+    const chronicle: ChronicleEntry = {
+      id: createId.chronicleEntry(`arrival-${destination}-${state.time.cycle}`),
+      type: 'arrival',
+      timestamp: { cycle: state.time.cycle },
+      title: `Arrived at ${port?.name ?? 'Unknown Port'}`,
+      text: `The jump ends. ${port?.name ?? 'Our destination'} emerges from the static.`,
+      tags: ['travel', 'arrival'],
+      refs: { portId: destination },
+    };
+
+    const wasFirstVisit = !state.world.ports[destination]?.lastVisited;
+    
+    state = {
+      ...state,
+      world: {
+        ...state.world,
+        currentLocation: destination,
+        ports: {
+          ...state.world.ports,
+          [destination]: port ? {
+            ...port,
+            lastVisited: { cycle: state.time.cycle },
+          } : state.world.ports[destination],
+        },
+        knownPorts: state.world.knownPorts.includes(destination) 
+          ? state.world.knownPorts 
+          : [...state.world.knownPorts, destination],
+      },
+      chronicle: [...state.chronicle, chronicle],
+      stats: {
+        ...state.stats,
+        totalDistanceTraveled: state.stats.totalDistanceTraveled + 1,
+        portsVisited: wasFirstVisit ? state.stats.portsVisited + 1 : state.stats.portsVisited,
+      },
+    };
+
+    journeyState = null;
+    processAchievements();
+    save();
+    notify();
+  }
+
+  function triggerPortEvent(): TriggeredEvent | null {
+    if (currentEvent) return currentEvent;
+    if (journeyState) return null;
+
+    const rng = createSeededRng(state.rngState);
+    state = { ...state, rngState: state.rngState + 1 };
+
+    const context = { state, cardDefs, rng, contextType: 'port' as EventContextType };
+    const portScenelets = scenelets.filter(s => 
+      !s.requirements.context || s.requirements.context === 'port' || s.requirements.context === 'any'
+    );
+    
+    const event = selectEvent(portScenelets, context);
     
     if (event) {
       currentEvent = event;
@@ -131,11 +319,41 @@ export function createGameController(
     if (!currentEvent) return;
 
     const passage = currentEvent.scenelet.passages[currentEvent.passageIndex];
-    if (!passage?.choices) return;
+    
+    if (!passage?.choices) {
+      currentEvent = null;
+      if (journeyState && journeyState.eventsRemaining > 0) {
+        triggerNextJourneyEvent();
+      } else if (journeyState) {
+        completeJourney();
+      }
+      notify();
+      return;
+    }
+
+    if (choiceIndex < 0 || choiceIndex >= passage.choices.length) {
+      currentEvent = null;
+      if (journeyState && journeyState.eventsRemaining > 0) {
+        triggerNextJourneyEvent();
+      } else if (journeyState) {
+        completeJourney();
+      }
+      notify();
+      return;
+    }
 
     const choice = passage.choices[choiceIndex];
-    if (!choice) return;
-
+    if (!choice) {
+      currentEvent = null;
+      if (journeyState && journeyState.eventsRemaining > 0) {
+        triggerNextJourneyEvent();
+      } else if (journeyState) {
+        completeJourney();
+      }
+      notify();
+      return;
+    }
+    
     state = applyEffects(state, choice.effects, cardDefs);
 
     if (choice.nextPassage !== undefined) {
@@ -145,16 +363,26 @@ export function createGameController(
       };
     } else {
       currentEvent = null;
+      if (journeyState && journeyState.eventsRemaining > 0) {
+        triggerNextJourneyEvent();
+      } else if (journeyState) {
+        completeJourney();
+      }
     }
 
+    processAchievements();
+    save();
     notify();
   }
 
-  startTimers();
+  function isGameOver(): boolean {
+    return state.resources.hull <= 0 || state.resources.morale <= 0;
+  }
 
   return {
     getState: () => state,
     dispatch: dispatchAction,
+    travel,
     save,
     load,
     reset,
@@ -162,8 +390,12 @@ export function createGameController(
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
-    triggerEvent,
+    triggerPortEvent,
     resolveEventChoice,
     getCurrentEvent: () => currentEvent,
+    getJourneyState: () => journeyState,
+    isGameOver,
+    getNewAchievements: () => pendingAchievements,
+    clearNewAchievements: () => { pendingAchievements = []; },
   };
 }

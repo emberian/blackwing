@@ -3,14 +3,13 @@ import {
   type GameAction,
   type CardDef,
   type CardInstance,
-  type ChronicleEntry,
   type PortId,
   type CardDefId,
   type CardInstanceId,
-  type SimulationConfig,
+  type GameConfig,
   DEFAULT_CONFIG,
 } from './types.js';
-import { calculateTravelTime } from './simulate.js';
+import { calculateFuelCost } from './simulate.js';
 
 export interface ActionResult {
   state: GameState;
@@ -22,11 +21,10 @@ type ActionHandler<T extends GameAction['type']> = (
   state: GameState,
   payload: Extract<GameAction, { type: T }>['payload'],
   cardDefs: Map<string, CardDef>,
-  config: SimulationConfig
+  config: GameConfig
 ) => ActionResult;
 
 const handlers: { [K in GameAction['type']]: ActionHandler<K> } = {
-  TICK: handleTick,
   TRAVEL: handleTravel,
   TRADE_BUY: handleTradeBuy,
   TRADE_SELL: handleTradeSell,
@@ -40,7 +38,6 @@ const handlers: { [K in GameAction['type']]: ActionHandler<K> } = {
   CONTRACT_ABANDON: handleContractAbandon,
   CREW_HIRE: handleCrewHire,
   CREW_DISMISS: handleCrewDismiss,
-  EVENT_CHOICE: handleEventChoice,
   REPAIR: handleRepair,
   RESUPPLY: handleResupply,
   REFUEL: handleRefuel,
@@ -50,51 +47,27 @@ export function dispatch(
   state: GameState,
   action: GameAction,
   cardDefs: Map<string, CardDef>,
-  config: SimulationConfig = DEFAULT_CONFIG
+  config: GameConfig = DEFAULT_CONFIG
 ): ActionResult {
   const handler = handlers[action.type] as ActionHandler<typeof action.type>;
   return handler(state, action.payload as never, cardDefs, config);
-}
-
-function handleTick(
-  state: GameState,
-  _payload: { deltaMs: number },
-  _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
-): ActionResult {
-  return { state, success: true };
 }
 
 function handleTravel(
   state: GameState,
   payload: { destination: PortId },
   cardDefs: Map<string, CardDef>,
-  config: SimulationConfig
+  config: GameConfig
 ): ActionResult {
-  if (state.time.inTransit) {
-    return { state, success: false, message: 'Already in transit' };
+  if (state.world.currentLocation === payload.destination) {
+    return { state, success: false, message: 'Already at this location' };
   }
 
-  const travelTime = calculateTravelTime(state, payload.destination, cardDefs);
-  const fuelCost = config.baseFuelPerJump;
+  const fuelCost = calculateFuelCost(state, cardDefs, config);
 
   if (state.resources.fuel < fuelCost) {
     return { state, success: false, message: 'Insufficient fuel' };
   }
-
-  const departedAt = { era: state.time.era, year: state.time.year };
-  const arrivesAt = { era: state.time.era, year: state.time.year + travelTime };
-
-  const port = state.world.ports[payload.destination];
-  const chronicle: ChronicleEntry = {
-    id: `departure-${payload.destination}-${state.time.year}` as ChronicleEntry['id'],
-    type: 'departure',
-    timestamp: departedAt,
-    title: `Departed for ${port?.name ?? 'Unknown'}`,
-    text: `The hold is sealed. ${travelTime} years to destination. The long dark begins.`,
-    tags: ['travel', 'departure'],
-    refs: { portId: payload.destination },
-  };
 
   return {
     state: {
@@ -103,21 +76,9 @@ function handleTravel(
         ...state.resources,
         fuel: state.resources.fuel - fuelCost,
       },
-      time: {
-        ...state.time,
-        inTransit: true,
-        transitDestination: payload.destination,
-        transitDepartedAt: departedAt,
-        transitArrivesAt: arrivesAt,
-      },
-      chronicle: [...state.chronicle, chronicle],
-      stats: {
-        ...state.stats,
-        totalDistanceTraveled: state.stats.totalDistanceTraveled + 1,
-      },
     },
     success: true,
-    message: `Departing for ${port?.name ?? 'unknown port'}. ETA: ${travelTime} years.`,
+    message: `Jump initiated to ${state.world.ports[payload.destination]?.name ?? 'unknown'}`,
   };
 }
 
@@ -125,7 +86,7 @@ function handleTradeBuy(
   state: GameState,
   payload: { cardDefId: CardDefId; quantity: number },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const def = cardDefs.get(payload.cardDefId);
   if (!def) {
@@ -156,8 +117,7 @@ function handleTradeBuy(
       level: 1,
       condition: 100,
       mods: [],
-      acquiredAt: { era: state.time.era, year: state.time.year },
-      age: def.type === 'crew' ? 25 : undefined,
+      acquiredAt: { cycle: state.time.cycle },
     };
     newCollection.push(instanceId);
   }
@@ -188,7 +148,7 @@ function handleTradeSell(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -238,7 +198,7 @@ function handleCardEquip(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -272,7 +232,7 @@ function handleCardUnequip(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   if (!state.cards.deck.includes(payload.instanceId)) {
     return { state, success: false, message: 'Card not equipped' };
@@ -296,7 +256,7 @@ function handleCardUpgrade(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -343,7 +303,7 @@ function handleModuleInstall(
   state: GameState,
   payload: { instanceId: CardInstanceId; slot: keyof typeof state.ship.modules },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -382,7 +342,7 @@ function handleModuleUninstall(
   state: GameState,
   payload: { slot: keyof typeof state.ship.modules },
   _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const moduleId = state.ship.modules[payload.slot];
   if (!moduleId) {
@@ -412,7 +372,7 @@ function handleContractAccept(
   state: GameState,
   payload: { cardDefId: CardDefId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  config: GameConfig
 ): ActionResult {
   const def = cardDefs.get(payload.cardDefId);
   if (!def || def.type !== 'contract') {
@@ -426,8 +386,8 @@ function handleContractAccept(
     level: 1,
     condition: 100,
     mods: [],
-    acquiredAt: { era: state.time.era, year: state.time.year },
-    timeRemaining: def.contractTerms?.timeLimit,
+    acquiredAt: { cycle: state.time.cycle },
+    cyclesRemaining: def.contractTerms?.cycleLimit ?? config.contractTimeLimit,
   };
 
   return {
@@ -451,7 +411,7 @@ function handleContractComplete(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -463,28 +423,73 @@ function handleContractComplete(
     return { state, success: false, message: 'Invalid contract' };
   }
 
-  const reward = def.contractTerms.reward;
-  const newInstances = { ...state.cards.instances };
-  delete newInstances[payload.instanceId];
+  const terms = def.contractTerms;
+  
+  if (terms.destination !== state.world.currentLocation) {
+    return { state, success: false, message: 'Must be at contract destination' };
+  }
+
+  if (terms.cargoRequired) {
+    const requiredDefId = terms.cargoRequired.cardDefId;
+    const requiredQty = terms.cargoRequired.quantity;
+    
+    const ownedCargo = [...state.cards.deck, ...state.cards.collection]
+      .map(id => state.cards.instances[id])
+      .filter(inst => inst && inst.cardDefId === requiredDefId);
+    
+    if (ownedCargo.length < requiredQty) {
+      return { state, success: false, message: `Need ${requiredQty}x ${cardDefs.get(requiredDefId)?.name ?? 'cargo'}` };
+    }
+  }
+
+  let newState = state;
+  
+  if (terms.cargoRequired) {
+    const requiredDefId = terms.cargoRequired.cardDefId;
+    const requiredQty = terms.cargoRequired.quantity;
+    
+    const cargoToRemove = [...state.cards.deck, ...state.cards.collection]
+      .filter(id => state.cards.instances[id]?.cardDefId === requiredDefId)
+      .slice(0, requiredQty);
+    
+    const newInstances = { ...newState.cards.instances };
+    for (const id of cargoToRemove) {
+      delete newInstances[id];
+    }
+    
+    newState = {
+      ...newState,
+      cards: {
+        ...newState.cards,
+        instances: newInstances,
+        deck: newState.cards.deck.filter(id => !cargoToRemove.includes(id)),
+        collection: newState.cards.collection.filter(id => !cargoToRemove.includes(id)),
+      },
+    };
+  }
+
+  const reward = terms.reward;
+  const contractInstances = { ...newState.cards.instances };
+  delete contractInstances[payload.instanceId];
 
   return {
     state: {
-      ...state,
+      ...newState,
       resources: {
-        credits: state.resources.credits + (reward.credits ?? 0),
-        fuel: state.resources.fuel + (reward.fuel ?? 0),
-        supplies: state.resources.supplies + (reward.supplies ?? 0),
-        hull: state.resources.hull,
-        morale: Math.min(100, state.resources.morale + (reward.morale ?? 0)),
+        credits: newState.resources.credits + (reward.credits ?? 0),
+        fuel: newState.resources.fuel + (reward.fuel ?? 0),
+        supplies: newState.resources.supplies + (reward.supplies ?? 0),
+        hull: newState.resources.hull,
+        morale: Math.min(100, newState.resources.morale + (reward.morale ?? 0)),
       },
       cards: {
-        ...state.cards,
-        instances: newInstances,
-        activeContracts: state.cards.activeContracts.filter(id => id !== payload.instanceId),
+        ...newState.cards,
+        instances: contractInstances,
+        activeContracts: newState.cards.activeContracts.filter(id => id !== payload.instanceId),
       },
       stats: {
-        ...state.stats,
-        contractsCompleted: state.stats.contractsCompleted + 1,
+        ...newState.stats,
+        contractsCompleted: newState.stats.contractsCompleted + 1,
       },
     },
     success: true,
@@ -496,7 +501,7 @@ function handleContractAbandon(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -538,7 +543,7 @@ function handleCrewHire(
   state: GameState,
   payload: { cardDefId: CardDefId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const def = cardDefs.get(payload.cardDefId);
   if (!def || def.type !== 'crew') {
@@ -557,8 +562,7 @@ function handleCrewHire(
     level: 1,
     condition: 100,
     mods: [],
-    acquiredAt: { era: state.time.era, year: state.time.year },
-    age: 20 + Math.floor(Math.random() * 20),
+    acquiredAt: { cycle: state.time.cycle },
   };
 
   return {
@@ -591,7 +595,7 @@ function handleCrewDismiss(
   state: GameState,
   payload: { instanceId: CardInstanceId },
   cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  _config: GameConfig
 ): ActionResult {
   const instance = state.cards.instances[payload.instanceId];
   if (!instance) {
@@ -621,20 +625,11 @@ function handleCrewDismiss(
   };
 }
 
-function handleEventChoice(
-  state: GameState,
-  _payload: { sceneletId: string; choiceIndex: number },
-  _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
-): ActionResult {
-  return { state, success: true };
-}
-
 function handleRepair(
   state: GameState,
   payload: { amount: number },
   _cardDefs: Map<string, CardDef>,
-  config: SimulationConfig
+  config: GameConfig
 ): ActionResult {
   const cost = payload.amount * config.baseRepairCost;
   if (state.resources.credits < cost) {
@@ -661,9 +656,9 @@ function handleResupply(
   state: GameState,
   payload: { amount: number },
   _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  config: GameConfig
 ): ActionResult {
-  const cost = payload.amount * 2;
+  const cost = payload.amount * config.baseSupplyCost;
   if (state.resources.credits < cost) {
     return { state, success: false, message: 'Insufficient credits' };
   }
@@ -686,9 +681,9 @@ function handleRefuel(
   state: GameState,
   payload: { amount: number },
   _cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig
+  config: GameConfig
 ): ActionResult {
-  const cost = payload.amount * 3;
+  const cost = payload.amount * config.baseFuelCost;
   if (state.resources.credits < cost) {
     return { state, success: false, message: 'Insufficient credits' };
   }

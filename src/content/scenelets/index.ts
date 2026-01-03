@@ -2,22 +2,22 @@ import type { Scenelet, SceneletId } from '../../core/types.js';
 
 const id = (s: string): SceneletId => s as SceneletId;
 
-export const TRANSIT_SCENELETS: Scenelet[] = [
+export const JOURNEY_SCENELETS: Scenelet[] = [
   {
-    id: id('transit_strange_signal'),
+    id: id('journey_strange_signal'),
     title: 'Strange Signal',
     tags: ['mystery', 'discovery'],
     requirements: {
-      location: 'transit',
+      context: 'journey',
       shipTags: ['sensor'],
     },
     weight: 10,
-    cooldown: 50,
+    cooldown: 5,
     passages: [
       {
         text: `The sensor array chirps—an anomaly in the void. A signal, old beyond measure, repeating in patterns that feel almost like language.
 
-It comes from somewhere off your plotted course. Investigating would cost time and fuel.`,
+It comes from somewhere off your plotted course. Investigating would cost fuel.`,
         choices: [
           {
             text: 'Investigate the signal',
@@ -48,7 +48,7 @@ It comes from somewhere off your plotted course. Investigating would cost time a
         ],
       },
       {
-        text: `The source is a derelict—older than your records can identify. Its hull is pocked with micrometeorite impacts spanning millennia.
+        text: `The source is a derelict—older than your records can identify. Its hull is pocked with micrometeorite impacts.
 
 Inside, you find only silence and a single data core, still faintly powered.`,
         choices: [
@@ -78,14 +78,14 @@ Inside, you find only silence and a single data core, still faintly powered.`,
     ],
   },
   {
-    id: id('transit_hull_breach'),
+    id: id('journey_hull_breach'),
     title: 'Micrometeorite Impact',
     tags: ['danger', 'ship'],
     requirements: {
-      location: 'transit',
+      context: 'journey',
     },
     weight: 15,
-    cooldown: 20,
+    cooldown: 3,
     passages: [
       {
         text: `A sharp ping against the hull. Then another. Then a spray of them—a micrometeorite cluster, invisible until impact.
@@ -131,21 +131,21 @@ Warning lights flare. Pressure dropping in cargo bay three.`,
     ],
   },
   {
-    id: id('transit_crew_conflict'),
+    id: id('journey_crew_conflict'),
     title: 'Tension in the Hold',
     tags: ['crew', 'social'],
     requirements: {
-      location: 'transit',
+      context: 'journey',
       minResources: { morale: 20 },
       maxResources: { morale: 60 },
     },
     weight: 12,
-    cooldown: 30,
+    cooldown: 4,
     passages: [
       {
-        text: `Voices raised in the mess. The long dark wears on everyone differently.
+        text: `Voices raised in the mess. The journey wears on everyone differently.
 
-Two of your crew stand chest to chest, grievances spilling out that have been building for years—subjective years, anyway.`,
+Two of your crew stand chest to chest, grievances spilling out that have been building for a while.`,
         choices: [
           {
             text: 'Intervene and mediate',
@@ -182,35 +182,426 @@ Two of your crew stand chest to chest, grievances spilling out that have been bu
     ],
   },
   {
-    id: id('transit_dream'),
-    title: 'Dreams of Elsewhere',
-    tags: ['mystery', 'narrative'],
+    id: id('journey_quiet_moment'),
+    title: 'A Moment of Calm',
+    tags: ['narrative', 'peaceful'],
     requirements: {
-      location: 'transit',
+      context: 'journey',
+      minResources: { morale: 50 },
     },
-    weight: 5,
-    cooldown: 100,
+    weight: 8,
+    cooldown: 5,
     passages: [
       {
-        text: `You wake from cryo-doze with a memory that isn't yours.
+        text: `The hold is quiet. The engines hum their constant song. Through the viewport, stars drift past like snow.
 
-A world of amber skies. A name you've never heard spoken. The certainty that you've been here before, in some other life, some other hold.
-
-The feeling fades with waking, but something lingers.`,
+For a moment, everything feels right.`,
         choices: [
           {
-            text: 'Record the vision',
+            text: 'Savor the peace',
             effects: {
-              setFlags: { 'dream_recorded': true },
+              resources: { morale: 5 },
               addChronicle: {
-                title: 'A Dream Remembered',
-                text: 'Dreams in the long dark. They feel too real to dismiss.',
+                title: 'Calm Between Storms',
+                text: 'A rare moment of peace in the void. The crew takes a collective breath.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_distress_signal'),
+    title: 'Distress Beacon',
+    tags: ['danger', 'opportunity'],
+    requirements: {
+      context: 'journey',
+    },
+    weight: 10,
+    cooldown: 4,
+    passages: [
+      {
+        text: `A distress beacon cuts through the static. The signal is weak, intermittent. Could be genuine. Could be a trap.
+
+Responding would take time and fuel.`,
+        choices: [
+          {
+            text: 'Respond to the distress call',
+            effects: {
+              resources: { fuel: -3 },
+            },
+            nextPassage: 1,
+          },
+          {
+            text: 'Log it and continue',
+            effects: {
+              resources: { morale: -5 },
+              addChronicle: {
+                title: 'Beacon Ignored',
+                text: 'We logged a distress signal but did not respond. The void is full of ghosts.',
+              },
+            },
+          },
+        ],
+      },
+      {
+        text: `You find a small transport, dead in space. Power failed. Life support offline. One survivor in a pressure suit, barely conscious.
+
+They have nothing to offer but gratitude.`,
+        choices: [
+          {
+            text: 'Take them aboard',
+            effects: {
+              resources: { supplies: -5, morale: 10 },
+              addCards: ['crew_stowaway' as any],
+              addChronicle: {
+                title: 'Rescue',
+                text: 'Pulled a survivor from the void. Another soul for the hold.',
               },
             },
           },
           {
-            text: 'Dismiss it as transit fatigue',
+            text: 'Give them supplies and coordinates to the nearest port',
+            effects: {
+              resources: { supplies: -10 },
+              addChronicle: {
+                title: 'What Help We Could',
+                text: 'We gave what we could spare. Whether it was enough, we may never know.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_cargo_problem'),
+    title: 'Cargo Trouble',
+    tags: ['danger', 'cargo'],
+    requirements: {
+      context: 'journey',
+      cargoTags: ['volatile'],
+    },
+    weight: 12,
+    cooldown: 3,
+    passages: [
+      {
+        text: `Alarms blare. Something in the cargo bay is destabilizing. The volatile isotopes are fluctuating beyond safe parameters.
+
+You have seconds to decide.`,
+        choices: [
+          {
+            text: 'Emergency vent the cargo',
+            effects: {
+              addChronicle: {
+                title: 'Cargo Jettisoned',
+                text: 'We vented the unstable cargo before it could breach containment. A loss, but we\'re alive.',
+              },
+            },
+          },
+          {
+            text: 'Attempt to stabilize',
+            requirements: {
+              crewTags: ['engineering'],
+            },
+            effects: {
+              resources: { morale: 5 },
+              addChronicle: {
+                title: 'Crisis Averted',
+                text: 'The engineer managed to stabilize the cargo. Close call.',
+              },
+            },
+          },
+          {
+            text: 'Do nothing and hope',
+            effects: {
+              damage: { hull: 15, morale: 10 },
+              addChronicle: {
+                title: 'Containment Breach',
+                text: 'The cargo blew. We survived, but the hull took heavy damage.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_nebula'),
+    title: 'Nebula Crossing',
+    tags: ['navigation', 'beauty'],
+    requirements: {
+      context: 'journey',
+    },
+    weight: 10,
+    cooldown: 4,
+    passages: [
+      {
+        text: `The jump takes you through a nebula—vast clouds of luminescent gas stretching across light-years.
+
+The crew gathers at the viewports. For a moment, the dangers of the void feel distant.`,
+        choices: [
+          {
+            text: 'Take a moment to appreciate it',
+            effects: {
+              resources: { morale: 10 },
+              addChronicle: {
+                title: 'Beauty in the Void',
+                text: 'Passed through a nebula. Sometimes the universe reminds us why we travel.',
+              },
+            },
+          },
+          {
+            text: 'Keep moving—we have a schedule',
             effects: {},
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_pirates'),
+    title: 'Hostile Contact',
+    tags: ['danger', 'combat'],
+    requirements: {
+      context: 'journey',
+    },
+    weight: 8,
+    cooldown: 5,
+    passages: [
+      {
+        text: `Proximity alarm. A ship emerges from behind an asteroid, weapons hot.
+
+"Cut your engines. Prepare to be boarded. Resist and we vent your hold to vacuum."
+
+Pirates. Two of them, closing fast.`,
+        choices: [
+          {
+            text: 'Surrender and negotiate',
+            effects: {
+              resources: { credits: -40 },
+              addChronicle: {
+                title: 'Pirate Toll',
+                text: 'Paid off pirates to avoid bloodshed. The void takes its cut.',
+              },
+            },
+          },
+          {
+            text: 'Run for it',
+            effects: {
+              resources: { fuel: -10 },
+              damage: { hull: 8 },
+              addChronicle: {
+                title: 'Narrow Escape',
+                text: 'Outran pirates, but not before they scored a few hits.',
+              },
+            },
+          },
+          {
+            text: 'Fight back',
+            requirements: {
+              shipTags: ['combat'],
+            },
+            effects: {
+              resources: { credits: 60 },
+              damage: { hull: 5 },
+              addChronicle: {
+                title: 'Pirate Hunters',
+                text: 'Drove off pirates and salvaged what they left behind.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_derelict'),
+    title: 'Abandoned Ship',
+    tags: ['discovery', 'opportunity'],
+    requirements: {
+      context: 'journey',
+    },
+    weight: 8,
+    cooldown: 5,
+    passages: [
+      {
+        text: `Sensors detect a drifting vessel. No power signature. No life signs. Just metal and silence.
+
+Could be salvage. Could be a tomb. Could be a trap.`,
+        choices: [
+          {
+            text: 'Board and investigate',
+            effects: {
+              resources: { fuel: -3 },
+            },
+            nextPassage: 1,
+          },
+          {
+            text: 'Pass it by',
+            effects: {
+              addChronicle: {
+                title: 'Ghost Ship',
+                text: 'Passed a derelict without stopping. Some mysteries are best left unsolved.',
+              },
+            },
+          },
+        ],
+      },
+      {
+        text: `The ship is old—decades, maybe centuries. The crew died at their posts, mummified by vacuum.
+
+In the cargo bay, a few crates remain sealed. Their contents might be valuable.`,
+        choices: [
+          {
+            text: 'Take the cargo',
+            effects: {
+              resources: { credits: 75 },
+              addChronicle: {
+                title: 'Salvage Rights',
+                text: 'Found valuables aboard a derelict. The dead have no use for cargo.',
+              },
+            },
+          },
+          {
+            text: 'Leave them be',
+            effects: {
+              resources: { morale: 5 },
+              addChronicle: {
+                title: 'Respect for the Dead',
+                text: 'Left the derelict\'s cargo untouched. Some things should rest.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_fuel_leak'),
+    title: 'Fuel Leak',
+    tags: ['danger', 'ship'],
+    requirements: {
+      context: 'journey',
+      minResources: { fuel: 15 },
+    },
+    weight: 10,
+    cooldown: 4,
+    passages: [
+      {
+        text: `Warning: fuel reserves dropping unexpectedly. Diagnostic scan reveals a micro-fracture in the fuel line.
+
+You're losing fuel fast.`,
+        choices: [
+          {
+            text: 'Emergency patch',
+            effects: {
+              resources: { fuel: -8 },
+              addChronicle: {
+                title: 'Patched',
+                text: 'Fixed a fuel leak in transit. Lost some fuel, but could have been worse.',
+              },
+            },
+          },
+          {
+            text: 'Full repair protocol',
+            requirements: {
+              crewTags: ['engineering'],
+            },
+            effects: {
+              resources: { fuel: -3 },
+              addChronicle: {
+                title: 'Expert Repair',
+                text: 'The engineer fixed the leak with minimal fuel loss.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_crew_story'),
+    title: 'Crew Tales',
+    tags: ['crew', 'narrative'],
+    requirements: {
+      context: 'journey',
+      minResources: { morale: 30 },
+    },
+    weight: 10,
+    cooldown: 4,
+    passages: [
+      {
+        text: `Night cycle in the hold. The crew gathers in the common area, trading stories of past voyages.
+
+Someone produces a bottle of something strong. The conversation flows.`,
+        choices: [
+          {
+            text: 'Join them',
+            effects: {
+              resources: { morale: 8, supplies: -2 },
+              addChronicle: {
+                title: 'Crew Bonding',
+                text: 'Shared stories and drinks with the crew. The hold feels more like home.',
+              },
+            },
+          },
+          {
+            text: 'Let them have their moment',
+            effects: {
+              resources: { morale: 3 },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('journey_asteroid_field'),
+    title: 'Asteroid Field',
+    tags: ['danger', 'navigation'],
+    requirements: {
+      context: 'journey',
+    },
+    weight: 12,
+    cooldown: 3,
+    passages: [
+      {
+        text: `The route passes through a dense asteroid field. Standard navigation would take hours. A skilled pilot could cut through faster.`,
+        choices: [
+          {
+            text: 'Take the safe route',
+            effects: {
+              resources: { supplies: -3 },
+              addChronicle: {
+                title: 'Careful Navigation',
+                text: 'Took the long way through the asteroid field. Slow but safe.',
+              },
+            },
+          },
+          {
+            text: 'Cut through the field',
+            requirements: {
+              crewTags: ['navigation'],
+            },
+            effects: {
+              resources: { morale: 5 },
+              addChronicle: {
+                title: 'Skilled Flying',
+                text: 'Threaded through the asteroid field like a needle through cloth.',
+              },
+            },
+          },
+          {
+            text: 'Risk a direct path',
+            effects: {
+              damage: { hull: 10 },
+              addChronicle: {
+                title: 'Asteroid Damage',
+                text: 'Took a few hits cutting through the field. Hull integrity compromised.',
+              },
+            },
           },
         ],
       },
@@ -224,11 +615,11 @@ export const PORT_SCENELETS: Scenelet[] = [
     title: 'Desperate Offer',
     tags: ['trade', 'opportunity'],
     requirements: {
-      location: 'port',
+      context: 'port',
       minResources: { credits: 50 },
     },
     weight: 15,
-    cooldown: 25,
+    cooldown: 3,
     passages: [
       {
         text: `A figure approaches at the docking bay. Eyes darting. Voice low.
@@ -306,10 +697,10 @@ A glance over their shoulder. "Please. I just need to be gone."`,
     title: 'The Old Captain',
     tags: ['narrative', 'wisdom'],
     requirements: {
-      location: 'port',
+      context: 'port',
     },
     weight: 8,
-    cooldown: 75,
+    cooldown: 6,
     passages: [
       {
         text: `In the station's oldest bar—the kind with real wood and real silence—an ancient captain sits alone.
@@ -330,7 +721,7 @@ They gesture to the empty seat across from them.`,
         ],
       },
       {
-        text: `"Three hundred years I've hauled cargo. Subjective years, mind. The void doesn't count time the same.
+        text: `"Thirty years I've hauled cargo across these lanes. Seen ports rise and fall. Seen crews come and go.
 
 "You want advice? Here it is: The hold remembers. Every cargo, every crew, every choice—it all leaves marks. Make sure the marks are ones you can live with."
 
@@ -346,19 +737,6 @@ They return to their drink. Conversation over.`,
               },
             },
           },
-          {
-            text: 'Ask about the Lines',
-            requirements: {
-              requiredFlags: ['signal_investigated'],
-            },
-            effects: {
-              setFlags: { 'knows_about_lines': true },
-              addChronicle: {
-                title: 'The Lines',
-                text: 'The old captain spoke of the Shatterling Lines—immortal travelers who measure time in civilizations.',
-              },
-            },
-          },
         ],
       },
     ],
@@ -368,11 +746,11 @@ They return to their drink. Conversation over.`,
     title: 'Quiet Proposition',
     tags: ['smuggling', 'risk'],
     requirements: {
-      location: 'port',
+      context: 'port',
       excludedFlags: ['refused_smuggling'],
     },
     weight: 10,
-    cooldown: 40,
+    cooldown: 4,
     passages: [
       {
         text: `A message on your private channel. No sender ID. Just coordinates in the lower docks and a time.
@@ -383,7 +761,7 @@ When you arrive, a figure in worn but expensive clothes is waiting. "Your ship. 
             text: 'Accept the job',
             effects: {
               addCards: ['cargo_contraband' as any],
-              setFlags: { 'smuggling_active': true, 'smuggling_destination': 'port_shadow_market' },
+              setFlags: { 'smuggling_active': true },
               addChronicle: {
                 title: 'Shadow Work',
                 text: 'Accepted unmarked cargo for delivery to the Shadow Market. Questions weren\'t asked.',
@@ -433,9 +811,212 @@ When you arrive, a figure in worn but expensive clothes is waiting. "Your ship. 
       },
     ],
   },
+  {
+    id: id('port_market_opportunity'),
+    title: 'Market Tip',
+    tags: ['trade', 'opportunity'],
+    requirements: {
+      context: 'port',
+    },
+    weight: 12,
+    cooldown: 4,
+    passages: [
+      {
+        text: `A dock worker catches your eye. "Hey, captain. Word is the Frontier Station's medical supplies are running low. Real low. Just saying—if someone had supplies to sell..."
+
+They shrug and walk away.`,
+        choices: [
+          {
+            text: 'Note the tip',
+            effects: {
+              setFlags: { 'frontier_med_shortage': true },
+              addChronicle: {
+                title: 'Market Intelligence',
+                text: 'Heard a tip about medical supply shortages at Frontier Station. Could be profitable.',
+              },
+            },
+          },
+          {
+            text: 'Ignore dock gossip',
+            effects: {},
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('port_stowaway_found'),
+    title: 'Unwelcome Guest',
+    tags: ['crew', 'discovery'],
+    requirements: {
+      context: 'port',
+    },
+    weight: 8,
+    cooldown: 5,
+    passages: [
+      {
+        text: `During routine cargo inspection, your engineer finds something unexpected: a person, hidden among the crates.
+
+They're young, thin, terrified. "Please. I can work. I just... I can't go back."`,
+        choices: [
+          {
+            text: 'Welcome them aboard',
+            effects: {
+              resources: { morale: 5 },
+              addCards: ['crew_stowaway' as any],
+              addChronicle: {
+                title: 'New Crew',
+                text: 'Found a stowaway. Gave them a home. The hold grows fuller.',
+              },
+            },
+          },
+          {
+            text: 'Turn them in to station security',
+            effects: {
+              resources: { credits: 20, morale: -10 },
+              addChronicle: {
+                title: 'Hard Choices',
+                text: 'Turned in a stowaway for the bounty. The crew is quiet.',
+              },
+            },
+          },
+          {
+            text: 'Give them credits and send them on their way',
+            effects: {
+              resources: { credits: -25 },
+              addChronicle: {
+                title: 'Small Kindness',
+                text: 'Gave a stowaway enough to start over. Sometimes that\'s all anyone needs.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('port_repair_opportunity'),
+    title: 'Skilled Hands',
+    tags: ['repair', 'opportunity'],
+    requirements: {
+      context: 'port',
+      maxResources: { hull: 70 },
+      minResources: { credits: 40 },
+    },
+    weight: 12,
+    cooldown: 3,
+    passages: [
+      {
+        text: `A mechanic approaches your berth, tools in hand. "I see your hull's taken some hits. I'm between jobs—give me 40 credits and I'll do work worth twice that."`,
+        choices: [
+          {
+            text: 'Accept the offer',
+            effects: {
+              resources: { credits: -40, hull: 25 },
+              addChronicle: {
+                title: 'Repairs',
+                text: 'Found a skilled mechanic willing to work cheap. The hold is stronger.',
+              },
+            },
+          },
+          {
+            text: 'Decline',
+            effects: {},
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('port_gamble'),
+    title: 'High Stakes',
+    tags: ['risk', 'opportunity'],
+    requirements: {
+      context: 'port',
+      minResources: { credits: 50 },
+    },
+    weight: 8,
+    cooldown: 4,
+    passages: [
+      {
+        text: `In a dim corner of the station, a card game is in progress. The players look up as you approach.
+
+"Fresh blood. Care to test your luck, captain? Fifty credits to play."`,
+        choices: [
+          {
+            text: 'Sit down and play',
+            effects: {
+              resources: { credits: -50 },
+            },
+            nextPassage: 1,
+          },
+          {
+            text: 'Walk away',
+            effects: {},
+          },
+        ],
+      },
+      {
+        text: `The cards fly. Credits change hands. Fortune favors...`,
+        choices: [
+          {
+            text: 'See the result',
+            effects: {
+              resources: { credits: 100 },
+              addChronicle: {
+                title: 'Lucky Night',
+                text: 'Won big at cards. The void provides.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: id('port_faction_favor'),
+    title: 'Guild Representative',
+    tags: ['faction', 'opportunity'],
+    requirements: {
+      context: 'port',
+    },
+    weight: 10,
+    cooldown: 5,
+    passages: [
+      {
+        text: `A well-dressed figure intercepts you. "Captain. The Free Traders Guild has noticed your work. We like independent operators who get results.
+
+"Consider this a gift. A sign of goodwill. Perhaps in the future, we might do business."
+
+They hand you a credit chip.`,
+        choices: [
+          {
+            text: 'Accept graciously',
+            effects: {
+              resources: { credits: 50 },
+              addChronicle: {
+                title: 'Guild Notice',
+                text: 'The Free Traders Guild has taken an interest in our work. Could be useful.',
+              },
+            },
+          },
+          {
+            text: 'Decline—no strings attached',
+            effects: {
+              resources: { morale: 5 },
+              addChronicle: {
+                title: 'Independence',
+                text: 'Refused a guild bribe. We answer to no one.',
+              },
+            },
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 export const ALL_SCENELETS: Scenelet[] = [
-  ...TRANSIT_SCENELETS,
+  ...JOURNEY_SCENELETS,
   ...PORT_SCENELETS,
 ];

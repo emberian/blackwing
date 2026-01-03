@@ -8,17 +8,11 @@ export function createInitialState(): GameState {
   const factionTraders = createId.faction('faction_free_traders');
   
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     
     time: {
-      lastSimulatedAt: Date.now(),
-      era: 1,
-      year: 0,
-      ticks: 0,
-      inTransit: false,
-      transitDestination: undefined,
-      transitDepartedAt: undefined,
-      transitArrivesAt: undefined,
+      cycle: 0,
+      jumpsCompleted: 0,
     },
     
     ship: {
@@ -39,11 +33,11 @@ export function createInitialState(): GameState {
     },
     
     resources: {
-      credits: 100,
-      fuel: 50,
-      supplies: 30,
+      credits: 80,
+      fuel: 40,
+      supplies: 25,
       hull: 100,
-      morale: 75,
+      morale: 70,
     },
     
     cards: {
@@ -64,8 +58,11 @@ export function createInitialState(): GameState {
           tags: ['tech', 'luxury'],
           faction: factionTraders,
           status: 'thriving',
-          lastVisited: { era: 1, year: 0 },
-          marketModifiers: {},
+          lastVisited: { cycle: 0 },
+          marketModifiers: {
+            [createId.cardDef('cargo_luxury_goods')]: 0.8,
+            [createId.cardDef('cargo_processed_metals')]: 1.2,
+          },
           availableCards: [
             createId.cardDef('cargo_raw_ore'),
             createId.cardDef('cargo_processed_metals'),
@@ -80,7 +77,7 @@ export function createInitialState(): GameState {
           availableContracts: [
             createId.cardDef('contract_standard_delivery'),
           ],
-          marketRefreshedAt: { era: 1, year: 0 },
+          marketRefreshedAt: { cycle: 0 },
         },
         [createId.port('port_frontier_station')]: {
           id: createId.port('port_frontier_station'),
@@ -101,7 +98,7 @@ export function createInitialState(): GameState {
           availableContracts: [
             createId.cardDef('contract_medical_emergency'),
           ],
-          marketRefreshedAt: { era: 1, year: 0 },
+          marketRefreshedAt: { cycle: 0 },
         },
         [createId.port('port_shadow_market')]: {
           id: createId.port('port_shadow_market'),
@@ -124,7 +121,91 @@ export function createInitialState(): GameState {
           availableContracts: [
             createId.cardDef('contract_discrete_cargo'),
           ],
-          marketRefreshedAt: { era: 1, year: 0 },
+          marketRefreshedAt: { cycle: 0 },
+        },
+        [createId.port('port_industrial_complex')]: {
+          id: createId.port('port_industrial_complex'),
+          name: 'Crucible Station',
+          description: 'A massive orbital foundry. The fires never stop. Neither does the demand for raw materials.',
+          tags: ['mineral', 'tech'],
+          faction: createId.faction('faction_industrial_consortium'),
+          status: 'thriving',
+          marketModifiers: {
+            [createId.cardDef('cargo_raw_ore')]: 1.8,
+            [createId.cardDef('cargo_processed_metals')]: 0.7,
+            [createId.cardDef('cargo_starship_components')]: 0.6,
+          },
+          availableCards: [
+            createId.cardDef('cargo_processed_metals'),
+            createId.cardDef('cargo_starship_components'),
+            createId.cardDef('crew_engineer'),
+            createId.cardDef('module_reinforced_hull'),
+            createId.cardDef('module_efficient_drives'),
+          ],
+          availableContracts: [],
+          marketRefreshedAt: { cycle: 0 },
+        },
+        [createId.port('port_sanctuary')]: {
+          id: createId.port('port_sanctuary'),
+          name: 'The Sanctuary',
+          description: 'A haven for the weary. Neutral ground. All are welcome who come in peace.',
+          tags: ['medicine', 'cultural'],
+          faction: null,
+          status: 'stable',
+          marketModifiers: {
+            [createId.cardDef('cargo_medical_supplies')]: 0.9,
+            [createId.cardDef('cargo_luxury_goods')]: 1.3,
+          },
+          availableCards: [
+            createId.cardDef('cargo_medical_supplies'),
+            createId.cardDef('cargo_luxury_goods'),
+            createId.cardDef('crew_medic'),
+            createId.cardDef('crew_quartermaster'),
+            createId.cardDef('module_cryo_bay'),
+          ],
+          availableContracts: [],
+          marketRefreshedAt: { cycle: 0 },
+        },
+        [createId.port('port_research_station')]: {
+          id: createId.port('port_research_station'),
+          name: 'Axiom Observatory',
+          description: 'Scientists peer into the void here, cataloging anomalies. They pay well for specimens.',
+          tags: ['data', 'ancient'],
+          faction: createId.faction('faction_science_collective'),
+          status: 'stable',
+          marketModifiers: {
+            [createId.cardDef('cargo_memory_cores')]: 1.4,
+            [createId.cardDef('cargo_living_specimens')]: 2.0,
+            [createId.cardDef('cargo_ancient_artifacts')]: 2.5,
+          },
+          availableCards: [
+            createId.cardDef('cargo_memory_cores'),
+            createId.cardDef('crew_navigator'),
+            createId.cardDef('module_sensor_array'),
+          ],
+          availableContracts: [],
+          marketRefreshedAt: { cycle: 0 },
+        },
+        [createId.port('port_pirate_haven')]: {
+          id: createId.port('port_pirate_haven'),
+          name: 'Freeport Omega',
+          description: 'No laws. No questions. No guarantees. Bring credits and watch your back.',
+          tags: ['contraband', 'weapon'],
+          faction: null,
+          status: 'declining',
+          marketModifiers: {
+            [createId.cardDef('cargo_contraband')]: 1.5,
+            [createId.cardDef('cargo_volatile_isotopes')]: 0.7,
+          },
+          availableCards: [
+            createId.cardDef('cargo_contraband'),
+            createId.cardDef('cargo_volatile_isotopes'),
+            createId.cardDef('crew_gunner'),
+            createId.cardDef('crew_stowaway'),
+            createId.cardDef('module_point_defense'),
+          ],
+          availableContracts: [],
+          marketRefreshedAt: { cycle: 0 },
         },
       },
       factions: {
@@ -140,10 +221,23 @@ export function createInitialState(): GameState {
           reputation: 0,
           flags: {},
         },
+        [createId.faction('faction_industrial_consortium')]: {
+          id: createId.faction('faction_industrial_consortium'),
+          name: 'Industrial Consortium',
+          reputation: 0,
+          flags: {},
+        },
+        [createId.faction('faction_science_collective')]: {
+          id: createId.faction('faction_science_collective'),
+          name: 'Science Collective',
+          reputation: 0,
+          flags: {},
+        },
       },
       knownPorts: [
         portHavenPrime,
         createId.port('port_frontier_station'),
+        createId.port('port_industrial_complex'),
       ],
       worldFlags: {},
     },
@@ -152,12 +246,17 @@ export function createInitialState(): GameState {
       {
         id: createId.chronicleEntry('genesis'),
         type: 'milestone',
-        timestamp: { era: 1, year: 0 },
+        timestamp: { cycle: 0 },
         title: 'The Beginning',
         text: 'The hold is cold. The engines hum. The void waits.',
         tags: ['start'],
       },
     ],
+    
+    achievements: {
+      unlocked: [],
+      unlockedAt: {},
+    },
     
     flags: {},
     
@@ -169,7 +268,6 @@ export function createInitialState(): GameState {
       crewLost: 0,
       contractsCompleted: 0,
       contractsFailed: 0,
-      erasSurvived: 0,
     },
     
     rngSeed: Date.now(),

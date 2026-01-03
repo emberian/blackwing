@@ -1,388 +1,186 @@
 import {
   type GameState,
-  type Resources,
   type CardDef,
-  type SimulationConfig,
+  type GameConfig,
   DEFAULT_CONFIG,
-  type ChronicleEntry,
-  createId,
-  type CardInstanceId,
   type PortId,
 } from './types.js';
 
-export interface SimulationResult {
-  state: GameState;
-  ticksSimulated: number;
-  events: SimulationEvent[];
+export function calculateJourneyEventCount(
+  _state: GameState,
+  _destination: PortId,
+  config: GameConfig = DEFAULT_CONFIG
+): number {
+  const { min, max } = config.journeyEventCount;
+  return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-export type SimulationEvent =
-  | { type: 'resource_change'; resource: keyof Resources; delta: number; reason: string }
-  | { type: 'card_degraded'; instanceId: CardInstanceId; newCondition: number }
-  | { type: 'card_destroyed'; instanceId: CardInstanceId; reason: string }
-  | { type: 'crew_aged'; instanceId: CardInstanceId; newAge: number }
-  | { type: 'crew_died'; instanceId: CardInstanceId; name: string; age: number }
-  | { type: 'arrival'; portId: PortId }
-  | { type: 'year_passed'; newYear: number }
-  | { type: 'era_changed'; newEra: number }
-  | { type: 'event_triggered'; sceneletId: string };
-
-export function simulateOffline(
+export function calculateFuelCost(
   state: GameState,
   cardDefs: Map<string, CardDef>,
-  now: number,
-  config: SimulationConfig = DEFAULT_CONFIG
-): SimulationResult {
-  const deltaMs = now - state.time.lastSimulatedAt;
-  const ticksToSimulate = Math.min(
-    Math.floor(deltaMs / config.msPerTick),
-    config.maxCatchUpTicks
-  );
-
-  if (ticksToSimulate <= 0) {
-    return { state, ticksSimulated: 0, events: [] };
-  }
-
-  let currentState = structuredClone(state);
-  const events: SimulationEvent[] = [];
-
-  for (let i = 0; i < ticksToSimulate; i++) {
-    const tickResult = simulateTick(currentState, cardDefs, config);
-    currentState = tickResult.state;
-    events.push(...tickResult.events);
-  }
-
-  currentState.time.lastSimulatedAt = now;
-
-  return { state: currentState, ticksSimulated: ticksToSimulate, events };
-}
-
-interface TickResult {
-  state: GameState;
-  events: SimulationEvent[];
-}
-
-function simulateTick(
-  state: GameState,
-  cardDefs: Map<string, CardDef>,
-  config: SimulationConfig
-): TickResult {
-  const events: SimulationEvent[] = [];
-  let s = state;
-
-  s = advanceTime(s, config, events);
-  s = processResourceGeneration(s, cardDefs, config, events);
-  s = processResourceConsumption(s, config, events);
-  s = processCargoDecay(s, cardDefs, config, events);
-  s = processCrewAging(s, cardDefs, config, events);
-  s = processTransit(s, config, events);
-
-  return { state: s, events };
-}
-
-function advanceTime(
-  state: GameState,
-  config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
-  const newTicks = state.time.ticks + 1;
-  const newYear = Math.floor(newTicks / config.ticksPerYear);
+  config: GameConfig = DEFAULT_CONFIG
+): number {
+  let fuelEfficiency = 1;
   
-  if (newYear > state.time.year) {
-    events.push({ type: 'year_passed', newYear });
+  for (const instanceId of state.cards.deck) {
+    const instance = state.cards.instances[instanceId];
+    if (!instance) continue;
+    
+    const def = cardDefs.get(instance.cardDefId);
+    if (!def?.effects.modifiers?.fuelEfficiency) continue;
+    
+    fuelEfficiency += def.effects.modifiers.fuelEfficiency;
   }
+  
+  for (const slot of Object.values(state.ship.modules)) {
+    if (!slot) continue;
+    const instance = state.cards.instances[slot];
+    if (!instance) continue;
+    
+    const def = cardDefs.get(instance.cardDefId);
+    if (!def?.effects.modifiers?.fuelEfficiency) continue;
+    
+    fuelEfficiency += def.effects.modifiers.fuelEfficiency;
+  }
+  
+  return Math.max(1, Math.ceil(config.baseFuelPerJump / fuelEfficiency));
+}
 
+export function processJourneyWear(
+  state: GameState,
+  config: GameConfig = DEFAULT_CONFIG
+): GameState {
+  const crewCount = state.cards.activeCrew.length;
+  const supplyCost = config.journeySupplyCost + crewCount;
+  
+  const newSupplies = Math.max(0, state.resources.supplies - supplyCost);
+  const starving = newSupplies === 0 && state.resources.supplies > 0;
+  
+  let newMorale = state.resources.morale;
+  if (starving) {
+    newMorale = Math.max(0, newMorale - 15);
+  }
+  
+  const newHull = Math.max(0, state.resources.hull - config.journeyHullWear);
+  
   return {
     ...state,
-    time: {
-      ...state.time,
-      ticks: newTicks,
-      year: newYear,
+    resources: {
+      ...state.resources,
+      supplies: newSupplies,
+      hull: newHull,
+      morale: newMorale,
     },
   };
 }
 
-function processResourceGeneration(
+export function processCargoDecay(
   state: GameState,
-  cardDefs: Map<string, CardDef>,
-  _config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
-  let resources = { ...state.resources };
-
-  for (const instanceId of state.cards.deck) {
-    const instance = state.cards.instances[instanceId];
-    if (!instance) continue;
-
-    const def = cardDefs.get(instance.cardDefId);
-    if (!def?.idleBehavior?.generates) continue;
-
-    const generates = def.idleBehavior.generates;
-    for (const [resource, amount] of Object.entries(generates)) {
-      if (amount && resource in resources) {
-        const key = resource as keyof Resources;
-        const scaledAmount = amount * (instance.condition / 100);
-        resources[key] += scaledAmount;
-        events.push({
-          type: 'resource_change',
-          resource: key,
-          delta: scaledAmount,
-          reason: `Generated by ${def.name}`,
-        });
-      }
-    }
-  }
-
-  return { ...state, resources };
-}
-
-function processResourceConsumption(
-  state: GameState,
-  config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
-  let resources = { ...state.resources };
-
-  const suppliesDelta = -config.baseSuppliesPerTick * (1 + state.cards.activeCrew.length * 0.1);
-  resources.supplies = Math.max(0, resources.supplies + suppliesDelta);
-  events.push({
-    type: 'resource_change',
-    resource: 'supplies',
-    delta: suppliesDelta,
-    reason: 'Life support consumption',
-  });
-
-  if (resources.supplies <= 0) {
-    const moraleDelta = -config.moraleDecayPerTick * 5;
-    resources.morale = Math.max(0, resources.morale + moraleDelta);
-    events.push({
-      type: 'resource_change',
-      resource: 'morale',
-      delta: moraleDelta,
-      reason: 'No supplies - crew starving',
-    });
-  }
-
-  if (state.time.inTransit) {
-    const hullDelta = -config.hullDecayPerTick;
-    resources.hull = Math.max(0, resources.hull + hullDelta);
-  }
-
-  return { ...state, resources };
-}
-
-function processCargoDecay(
-  state: GameState,
-  cardDefs: Map<string, CardDef>,
-  config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
+  cardDefs: Map<string, CardDef>
+): { state: GameState; decayedCards: string[] } {
   const instances = { ...state.cards.instances };
-  const deck = [...state.cards.deck];
   const collection = [...state.cards.collection];
+  const deck = [...state.cards.deck];
+  const decayedCards: string[] = [];
 
   for (const instanceId of [...deck, ...collection]) {
     const instance = instances[instanceId];
     if (!instance) continue;
 
     const def = cardDefs.get(instance.cardDefId);
-    if (!def) continue;
+    if (!def?.journeyBehavior?.decayChance) continue;
 
-    const decayRate = def.idleBehavior?.decayRate ?? config.cargoDecayChance;
-    if (decayRate <= 0) continue;
-
-    if (Math.random() < decayRate) {
-      const newCondition = instance.condition - 1;
+    if (Math.random() < def.journeyBehavior.decayChance) {
+      const newCondition = instance.condition - 10;
       
       if (newCondition <= 0) {
+        decayedCards.push(def.name);
         delete instances[instanceId];
         const deckIdx = deck.indexOf(instanceId);
         if (deckIdx >= 0) deck.splice(deckIdx, 1);
         const collIdx = collection.indexOf(instanceId);
         if (collIdx >= 0) collection.splice(collIdx, 1);
-        
-        events.push({
-          type: 'card_destroyed',
-          instanceId,
-          reason: `${def.name} deteriorated beyond recovery`,
-        });
       } else {
         instances[instanceId] = { ...instance, condition: newCondition };
-        events.push({
-          type: 'card_degraded',
-          instanceId,
-          newCondition,
-        });
       }
     }
   }
 
   return {
-    ...state,
-    cards: { ...state.cards, instances, deck, collection },
+    state: {
+      ...state,
+      cards: { ...state.cards, instances, deck, collection },
+    },
+    decayedCards,
   };
 }
 
-function processCrewAging(
+export function tickContractTimers(
   state: GameState,
-  cardDefs: Map<string, CardDef>,
-  config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
-  const instances = { ...state.cards.instances };
-  const activeCrew = [...state.cards.activeCrew];
-  const chronicle = [...state.chronicle];
+  cardDefs: Map<string, CardDef>
+): { state: GameState; expiredContracts: string[] } {
+  let instances = { ...state.cards.instances };
+  const activeContracts = [...state.cards.activeContracts];
+  const expiredContracts: string[] = [];
+  let resources = { ...state.resources };
+  let stats = { ...state.stats };
 
-  const yearPassed = state.time.ticks % config.ticksPerYear === 0;
-  if (!yearPassed) return state;
+  for (const contractId of [...activeContracts]) {
+    const instance = instances[contractId];
+    if (!instance || instance.cyclesRemaining === undefined) continue;
 
-  for (const instanceId of [...activeCrew]) {
-    const instance = instances[instanceId];
-    if (!instance || instance.age === undefined) continue;
-
-    const def = cardDefs.get(instance.cardDefId);
-    if (!def) continue;
-
-    const newAge = instance.age + 1;
-    const lifespan = def.lifespan ?? 80;
-
-    if (lifespan > 0 && newAge >= lifespan) {
-      delete instances[instanceId];
-      const crewIdx = activeCrew.indexOf(instanceId);
-      if (crewIdx >= 0) activeCrew.splice(crewIdx, 1);
+    const newCycles = instance.cyclesRemaining - 1;
+    
+    if (newCycles <= 0) {
+      const def = cardDefs.get(instance.cardDefId);
+      const penalty = def?.contractTerms?.penalty ?? {};
       
-      events.push({
-        type: 'crew_died',
-        instanceId,
-        name: def.name,
-        age: newAge,
-      });
-
-      const entry: ChronicleEntry = {
-        id: createId.chronicleEntry(`death-${instanceId}-${state.time.year}`),
-        type: 'death',
-        timestamp: { era: state.time.era, year: state.time.year },
-        title: `${def.name} has passed`,
-        text: `After ${newAge} years of faithful service, ${def.name} died peacefully. The void claims all, in time.`,
-        tags: ['crew', 'death'],
-        refs: { cardIds: [instanceId] },
+      expiredContracts.push(def?.name ?? 'Unknown contract');
+      delete instances[contractId];
+      const idx = activeContracts.indexOf(contractId);
+      if (idx >= 0) activeContracts.splice(idx, 1);
+      
+      resources = {
+        ...resources,
+        credits: Math.max(0, resources.credits - (penalty.credits ?? 0)),
+        morale: Math.max(0, resources.morale - (penalty.morale ?? 10)),
       };
-      chronicle.push(entry);
+      stats = {
+        ...stats,
+        contractsFailed: stats.contractsFailed + 1,
+      };
     } else {
-      instances[instanceId] = { ...instance, age: newAge };
-      events.push({ type: 'crew_aged', instanceId, newAge });
+      instances[contractId] = { ...instance, cyclesRemaining: newCycles };
     }
   }
 
   return {
-    ...state,
-    cards: { 
-      ...state.cards, 
-      instances, 
-      activeCrew,
-      deck: state.cards.deck.filter(id => id in instances),
+    state: {
+      ...state,
+      resources,
+      stats,
+      cards: { ...state.cards, instances, activeContracts },
     },
-    chronicle,
+    expiredContracts,
   };
 }
 
-function processTransit(
-  state: GameState,
-  _config: SimulationConfig,
-  events: SimulationEvent[]
-): GameState {
-  if (!state.time.inTransit || !state.time.transitArrivesAt) {
-    return state;
-  }
-
-  const arrived = 
-    state.time.era > state.time.transitArrivesAt.era ||
-    (state.time.era === state.time.transitArrivesAt.era && 
-     state.time.year >= state.time.transitArrivesAt.year);
-
-  if (!arrived) return state;
-
-  const destination = state.time.transitDestination!;
-  events.push({ type: 'arrival', portId: destination });
-
-  const chronicle = [...state.chronicle];
-  const port = state.world.ports[destination];
-  
-  const entry: ChronicleEntry = {
-    id: createId.chronicleEntry(`arrival-${destination}-${state.time.year}`),
-    type: 'arrival',
-    timestamp: { era: state.time.era, year: state.time.year },
-    title: `Arrived at ${port?.name ?? 'Unknown Port'}`,
-    text: `The long dark ends. ${port?.name ?? 'Our destination'} emerges from the void.`,
-    tags: ['travel', 'arrival'],
-    refs: { portId: destination },
-  };
-  chronicle.push(entry);
-
+export function advanceCycle(state: GameState): GameState {
   return {
     ...state,
     time: {
       ...state.time,
-      inTransit: false,
-      transitDestination: undefined,
-      transitDepartedAt: undefined,
-      transitArrivesAt: undefined,
+      cycle: state.time.cycle + 1,
     },
-    world: {
-      ...state.world,
-      currentLocation: destination,
-      ports: {
-        ...state.world.ports,
-        [destination]: port ? {
-          ...port,
-          lastVisited: { era: state.time.era, year: state.time.year },
-        } : state.world.ports[destination],
-      },
-    },
-    chronicle,
   };
 }
 
-export function calculateTravelTime(
-  state: GameState,
-  _destination: PortId,
-  _cardDefs: Map<string, CardDef>
-): number {
-  const baseYears = 50 + Math.floor(Math.random() * 200);
-  
-  let speedModifier = 1;
-  for (const instanceId of state.cards.deck) {
-    const instance = state.cards.instances[instanceId];
-    if (!instance) continue;
-  }
-  
-  return Math.ceil(baseYears / speedModifier);
-}
-
-export function compressEvents(events: SimulationEvent[]): SimulationEvent[] {
-  const resourceChanges = new Map<keyof Resources, number>();
-  const otherEvents: SimulationEvent[] = [];
-
-  for (const event of events) {
-    if (event.type === 'resource_change') {
-      const current = resourceChanges.get(event.resource) ?? 0;
-      resourceChanges.set(event.resource, current + event.delta);
-    } else {
-      otherEvents.push(event);
-    }
-  }
-
-  const compressed: SimulationEvent[] = [];
-  for (const [resource, delta] of resourceChanges) {
-    if (Math.abs(delta) > 0.01) {
-      compressed.push({
-        type: 'resource_change',
-        resource,
-        delta,
-        reason: 'Accumulated changes',
-      });
-    }
-  }
-
-  return [...compressed, ...otherEvents];
+export function incrementJumps(state: GameState): GameState {
+  return {
+    ...state,
+    time: {
+      ...state.time,
+      jumpsCompleted: state.time.jumpsCompleted + 1,
+    },
+  };
 }
