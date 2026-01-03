@@ -7,12 +7,18 @@ import {
 } from './types.js';
 
 export function calculateJourneyEventCount(
-  _state: GameState,
+  state: GameState,
   _destination: PortId,
   config: GameConfig = DEFAULT_CONFIG
 ): number {
   const { min, max } = config.journeyEventCount;
-  return min + Math.floor(Math.random() * (max - min + 1));
+  const rngValue = seededRandom(state.rngState);
+  return min + Math.floor(rngValue * (max - min + 1));
+}
+
+function seededRandom(seed: number): number {
+  const state = (seed * 1103515245 + 12345) & 0x7fffffff;
+  return state / 0x7fffffff;
 }
 
 export function calculateFuelCost(
@@ -76,7 +82,8 @@ export function processJourneyWear(
 
 export function processCargoDecay(
   state: GameState,
-  cardDefs: Map<string, CardDef>
+  cardDefs: Map<string, CardDef>,
+  rng: () => number
 ): { state: GameState; decayedCards: string[] } {
   const instances = { ...state.cards.instances };
   const collection = [...state.cards.collection];
@@ -90,7 +97,7 @@ export function processCargoDecay(
     const def = cardDefs.get(instance.cardDefId);
     if (!def?.journeyBehavior?.decayChance) continue;
 
-    if (Math.random() < def.journeyBehavior.decayChance) {
+    if (rng() < def.journeyBehavior.decayChance) {
       const newCondition = instance.condition - 10;
       
       if (newCondition <= 0) {

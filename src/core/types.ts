@@ -27,14 +27,24 @@ export type SceneletId = string & { readonly __brand: 'SceneletId' };
 /** Unique identifier for chronicle entries */
 export type ChronicleEntryId = string & { readonly __brand: 'ChronicleEntryId' };
 
-// Helper to create branded IDs
+function validateId(id: string, prefix: string): string {
+  if (!id || typeof id !== 'string') {
+    throw new Error(`Invalid ${prefix} ID: must be a non-empty string`);
+  }
+  const normalized = id.trim().toLowerCase().replace(/\s+/g, '_');
+  if (normalized.length === 0) {
+    throw new Error(`Invalid ${prefix} ID: cannot be empty after normalization`);
+  }
+  return normalized;
+}
+
 export const createId = {
-  cardDef: (id: string): CardDefId => id as CardDefId,
-  cardInstance: (id: string): CardInstanceId => id as CardInstanceId,
-  port: (id: string): PortId => id as PortId,
-  faction: (id: string): FactionId => id as FactionId,
-  scenelet: (id: string): SceneletId => id as SceneletId,
-  chronicleEntry: (id: string): ChronicleEntryId => id as ChronicleEntryId,
+  cardDef: (id: string): CardDefId => validateId(id, 'CardDef') as CardDefId,
+  cardInstance: (id: string): CardInstanceId => validateId(id, 'CardInstance') as CardInstanceId,
+  port: (id: string): PortId => validateId(id, 'Port') as PortId,
+  faction: (id: string): FactionId => validateId(id, 'Faction') as FactionId,
+  scenelet: (id: string): SceneletId => validateId(id, 'Scenelet') as SceneletId,
+  chronicleEntry: (id: string): ChronicleEntryId => validateId(id, 'ChronicleEntry') as ChronicleEntryId,
 };
 
 // =============================================================================
@@ -436,14 +446,14 @@ export interface GameConfig {
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
-  baseFuelPerJump: 8,
-  baseRepairCost: 8,
-  baseSupplyCost: 3,
-  baseFuelCost: 4,
+  baseFuelPerJump: 10,
+  baseRepairCost: 6,
+  baseSupplyCost: 2,
+  baseFuelCost: 3,
   
-  journeyEventCount: { min: 1, max: 2 },
-  journeySupplyCost: 3,
-  journeyHullWear: 3,
+  journeyEventCount: { min: 1, max: 3 },
+  journeySupplyCost: 2,
+  journeyHullWear: 2,
   
-  contractTimeLimit: 8,
+  contractTimeLimit: 10,
 };

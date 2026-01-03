@@ -3,6 +3,7 @@ import type { Achievement, AchievementId, GameState } from '../../core/types.js'
 const id = (s: string): AchievementId => s as AchievementId;
 
 export const ACHIEVEMENTS: Achievement[] = [
+  // Journey Milestones
   {
     id: id('first_jump'),
     name: 'First Steps',
@@ -25,6 +26,15 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: (state: GameState) => state.time.jumpsCompleted >= 50,
   },
   {
+    id: id('century_pilot'),
+    name: 'Century Pilot',
+    description: 'Complete 100 jumps',
+    icon: '💫',
+    check: (state: GameState) => state.time.jumpsCompleted >= 100,
+  },
+  
+  // Contract Milestones
+  {
     id: id('first_contract'),
     name: 'Honest Work',
     description: 'Complete your first contract',
@@ -45,12 +55,21 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '👑',
     check: (state: GameState) => state.stats.contractsCompleted >= 20,
   },
+  
+  // Exploration
   {
     id: id('explorer'),
     name: 'Explorer',
     description: 'Visit 3 different ports',
     icon: '🗺️',
     check: (state: GameState) => state.stats.portsVisited >= 3,
+  },
+  {
+    id: id('well_traveled'),
+    name: 'Well Traveled',
+    description: 'Visit 5 different ports',
+    icon: '🧭',
+    check: (state: GameState) => state.stats.portsVisited >= 5,
   },
   {
     id: id('cartographer'),
@@ -62,6 +81,8 @@ export const ACHIEVEMENTS: Achievement[] = [
       return state.stats.portsVisited >= totalPorts;
     },
   },
+  
+  // Wealth
   {
     id: id('wealthy'),
     name: 'Comfortable',
@@ -83,6 +104,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🏆',
     check: (state: GameState) => state.stats.totalCreditsEarned >= 10000,
   },
+  
+  // Crew
   {
     id: id('first_crew'),
     name: 'Captain',
@@ -97,6 +120,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '👥',
     check: (state: GameState) => state.cards.activeCrew.length >= 5,
   },
+  
+  // Survival
   {
     id: id('survivor'),
     name: 'Survivor',
@@ -111,6 +136,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '😰',
     check: (state: GameState) => state.resources.hull < 5 && state.resources.hull > 0,
   },
+  
+  // Time
   {
     id: id('cycle_100'),
     name: 'Century',
@@ -118,6 +145,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '⏳',
     check: (state: GameState) => state.time.cycle >= 100,
   },
+  
+  // Collection
   {
     id: id('collector'),
     name: 'Collector',
@@ -125,6 +154,15 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '📦',
     check: (state: GameState) => state.stats.cardsAcquired >= 20,
   },
+  {
+    id: id('hoarder'),
+    name: 'Hoarder',
+    description: 'Acquire 50 cards',
+    icon: '🗃️',
+    check: (state: GameState) => state.stats.cardsAcquired >= 50,
+  },
+  
+  // Hidden Achievements
   {
     id: id('shadow_trader'),
     name: 'Shadow Trader',
@@ -135,6 +173,62 @@ export const ACHIEVEMENTS: Achievement[] = [
       const shadowMarket = state.world.ports['port_shadow_market' as any];
       return shadowMarket?.lastVisited !== undefined;
     },
+  },
+  {
+    id: id('prior_touched'),
+    name: 'Prior-Touched',
+    description: 'Find a Beacon shard',
+    icon: '✨',
+    hidden: true,
+    check: (state: GameState) => state.flags['took_beacon_shard'] === true,
+  },
+  {
+    id: id('the_collector'),
+    name: 'The Collector\'s Friend',
+    description: 'Meet the Prior artifact collector',
+    icon: '🔮',
+    hidden: true,
+    check: (state: GameState) => state.flags['met_collector'] === true,
+  },
+  {
+    id: id('mercy'),
+    name: 'Mercy',
+    description: 'Rescue someone from the void',
+    icon: '🙏',
+    hidden: true,
+    check: (state: GameState) => state.flags['signal_investigated'] === true,
+  },
+  {
+    id: id('corporate_tool'),
+    name: 'Corporate Tool',
+    description: 'Accept a Consortium retainer',
+    icon: '🏢',
+    hidden: true,
+    check: (state: GameState) => state.flags['consortium_retainer'] === true,
+  },
+  {
+    id: id('principled'),
+    name: 'Principled',
+    description: 'Refuse smuggling work twice',
+    icon: '⚖️',
+    hidden: true,
+    check: (state: GameState) => state.flags['refused_smuggling_twice'] === true,
+  },
+  {
+    id: id('derelict_diver'),
+    name: 'Derelict Diver',
+    description: 'Salvage data from a Silence-era ship',
+    icon: '👻',
+    hidden: true,
+    check: (state: GameState) => state.flags['found_derelict_core'] === true || state.flags['derelict_data'] === true,
+  },
+  {
+    id: id('broke'),
+    name: 'Rock Bottom',
+    description: 'Have less than 10 credits',
+    icon: '💸',
+    hidden: true,
+    check: (state: GameState) => state.resources.credits < 10 && state.time.jumpsCompleted > 0,
   },
 ];
 

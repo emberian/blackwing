@@ -4,3 +4,4 @@ export * from './simulate.js';
 export * from './events.js';
 export * from './init.js';
 export * from './controller.js';
+export * from './persistence.js';

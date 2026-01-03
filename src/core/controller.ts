@@ -13,8 +13,20 @@ import { selectEvent, applyEffects, createSeededRng, type TriggeredEvent, type E
 import { createInitialState } from './init.js';
 import { DEFAULT_CONFIG, createId } from './types.js';
 import { checkAchievements, getAchievement } from '../content/achievements/index.js';
-
-const SAVE_KEY = 'cargo_hold_save';
+import {
+  type MetaState,
+  type SaveData,
+  saveGameState,
+  loadGameState,
+  clearGameState,
+  saveMetaState,
+  loadMetaState,
+  updateMetaAchievements,
+  incrementMetaGamesStarted,
+  downloadSaveFile,
+  createFileInput,
+  clearAllData,
+} from './persistence.js';
 
 export interface JourneyState {
   destination: PortId;
@@ -24,11 +36,15 @@ export interface JourneyState {
 
 export interface GameController {
   getState(): GameState;
+  getMetaState(): MetaState;
   dispatch(action: GameAction): { success: boolean; message?: string | undefined };
   travel(destination: PortId): { success: boolean; message?: string };
   save(): void;
   load(): boolean;
   reset(): void;
+  exportSave(): void;
+  importSave(onSuccess: () => void, onError: (msg: string) => void): void;
+  clearAll(): void;
   subscribe(listener: StateListener): () => void;
   triggerPortEvent(): TriggeredEvent | null;
   resolveEventChoice(choiceIndex: number): void;
@@ -46,6 +62,7 @@ export function createGameController(
   scenelets: Scenelet[]
 ): GameController {
   let state = createInitialState();
+  let metaState = loadMetaState();
   let currentEvent: TriggeredEvent | null = null;
   let journeyState: JourneyState | null = null;
   let pendingAchievements: AchievementId[] = [];
@@ -68,6 +85,9 @@ export function createGameController(
           unlockedAt,
         },
       };
+      
+      metaState = updateMetaAchievements(metaState, newlyUnlocked, state.time.cycle);
+      saveMetaState(metaState);
       
       for (const id of newlyUnlocked) {
         const achievement = getAchievement(id);
@@ -96,37 +116,51 @@ export function createGameController(
   }
 
   function save() {
-    try {
-      const serialized = JSON.stringify(state);
-      localStorage.setItem(SAVE_KEY, serialized);
-    } catch (e) {
-      console.error('Failed to save game:', e);
-    }
+    saveGameState(state);
   }
 
   function load(): boolean {
-    try {
-      const serialized = localStorage.getItem(SAVE_KEY);
-      if (!serialized) return false;
-
-      const loaded = JSON.parse(serialized) as GameState;
-      
-      if (loaded.schemaVersion !== state.schemaVersion) {
-        console.warn('Save version mismatch, starting fresh');
-        return false;
-      }
-
-      state = loaded;
-      notify();
-      return true;
-    } catch (e) {
-      console.error('Failed to load game:', e);
-      return false;
-    }
+    const loaded = loadGameState();
+    if (!loaded) return false;
+    
+    state = loaded;
+    notify();
+    return true;
   }
 
   function reset() {
-    localStorage.removeItem(SAVE_KEY);
+    clearGameState();
+    metaState = incrementMetaGamesStarted(metaState);
+    saveMetaState(metaState);
+    state = createInitialState();
+    currentEvent = null;
+    journeyState = null;
+    notify();
+  }
+
+  function exportSave() {
+    downloadSaveFile(state, metaState);
+  }
+
+  function importSave(onSuccess: () => void, onError: (msg: string) => void) {
+    createFileInput(
+      (data: SaveData) => {
+        state = data.gameState;
+        metaState = data.metaState;
+        saveGameState(state);
+        saveMetaState(metaState);
+        currentEvent = null;
+        journeyState = null;
+        notify();
+        onSuccess();
+      },
+      onError
+    );
+  }
+
+  function clearAll() {
+    clearAllData();
+    metaState = loadMetaState();
     state = createInitialState();
     currentEvent = null;
     journeyState = null;
@@ -205,18 +239,18 @@ export function createGameController(
       return;
     }
 
+    const rng = createSeededRng(state.rngState);
+    state = { ...state, rngState: state.rngState + 1 };
+
     state = processJourneyWear(state, DEFAULT_CONFIG);
     
-    const decayResult = processCargoDecay(state, cardDefs);
+    const decayResult = processCargoDecay(state, cardDefs, rng);
     state = decayResult.state;
     
     const contractResult = tickContractTimers(state, cardDefs);
     state = contractResult.state;
 
     state = advanceCycle(state);
-
-    const rng = createSeededRng(state.rngState);
-    state = { ...state, rngState: state.rngState + 1 };
 
     const context = { state, cardDefs, rng, contextType: 'journey' as EventContextType };
     const journeyScenelets = scenelets.filter(s => 
@@ -233,14 +267,44 @@ export function createGameController(
     if (event) {
       currentEvent = event;
     } else {
-      if (journeyState.eventsRemaining > 0) {
-        triggerNextJourneyEvent();
-      } else {
-        completeJourney();
-      }
+      currentEvent = createQuietPassageEvent(journeyState.eventsRemaining);
     }
 
     notify();
+  }
+
+  function createQuietPassageEvent(eventsRemaining: number): TriggeredEvent {
+    const quietPassages: string[] = [
+      'The void stretches on. The engines hum. Nothing stirs.',
+      'Stars wheel past the viewport. Another cycle in the dark.',
+      'The crew goes about their duties. The hold creaks and settles.',
+      'Sensor sweep comes back clean. Just empty space, all the way to the horizon.',
+      'A quiet cycle. Sometimes that\'s the best you can hope for.',
+    ];
+    const idx = state.rngState % quietPassages.length;
+    const text: string = quietPassages[idx]!;
+    
+    return {
+      scenelet: {
+        id: 'quiet_passage' as any,
+        title: 'Quiet Passage',
+        tags: ['travel'],
+        requirements: {},
+        weight: 0,
+        cooldown: 0,
+        passages: [{
+          text,
+          choices: eventsRemaining > 0 ? [{
+            text: 'Continue the journey',
+            effects: {},
+          }] : [{
+            text: 'Approach destination',
+            effects: {},
+          }],
+        }],
+      },
+      passageIndex: 0,
+    };
   }
 
   function completeJourney() {
@@ -381,11 +445,15 @@ export function createGameController(
 
   return {
     getState: () => state,
+    getMetaState: () => metaState,
     dispatch: dispatchAction,
     travel,
     save,
     load,
     reset,
+    exportSave,
+    importSave,
+    clearAll,
     subscribe: (listener) => {
       listeners.add(listener);
       return () => listeners.delete(listener);
