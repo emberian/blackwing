@@ -25,7 +25,7 @@ impl LocalBackend {
 
     /// Sync state signal from controller.
     fn sync_state(&self) {
-        self.controller.with(|ctrl| {
+        self.controller.with_untracked(|ctrl| {
             self.state.set(ctrl.snapshot());
         });
     }
@@ -50,7 +50,7 @@ impl Backend for LocalBackend {
     }
 
     fn export_zip(&self) -> Option<Vec<u8>> {
-        self.controller.with(|ctrl| ctrl.export_zip().ok())
+        self.controller.with_untracked(|ctrl| ctrl.export_zip().ok())
     }
 
     fn import_zip(&self, data: &[u8]) -> Result<(), String> {
