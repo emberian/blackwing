@@ -1,0 +1,32 @@
+[package]
+name = "holdsmith-controller"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+z3 = ["holdsmith-analyzer/z3"]
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+engine-runtime = { path = "../engine-runtime" }
+engine-script = { path = "../engine-script" }
+holdsmith-parser = { path = "../holdsmith-parser" }
+holdsmith-compiler = { path = "../holdsmith-compiler" }
+holdsmith-analyzer = { path = "../holdsmith-analyzer" }
+
+# Virtual filesystem
+vfs = "0.12"
+
+# Serialization (for project save/load)
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Utilities
+smol_str = { workspace = true }
+
+# Zip support for project export/import
+zip = "2.1"
