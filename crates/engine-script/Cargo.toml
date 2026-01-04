@@ -5,7 +5,11 @@ edition.workspace = true
 
 [dependencies]
 engine-core = { path = "../engine-core" }
+engine-primitives = { path = "../engine-primitives" }
+engine-world = { path = "../engine-world" }
 rhai = { workspace = true }
 parking_lot = { workspace = true }
 thiserror = { workspace = true }
 smol_str = { workspace = true }
+indexmap = { workspace = true }
+rustc-hash = { workspace = true }

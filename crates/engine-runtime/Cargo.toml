@@ -5,8 +5,13 @@ edition.workspace = true
 
 [dependencies]
 engine-core = { path = "../engine-core" }
+engine-primitives = { path = "../engine-primitives" }
+engine-world = { path = "../engine-world" }
+engine-systems = { path = "../engine-systems" }
+engine-content = { path = "../engine-content" }
 engine-script = { path = "../engine-script" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 rustc-hash = { workspace = true }
 smol_str = { workspace = true }
+indexmap = { workspace = true }
