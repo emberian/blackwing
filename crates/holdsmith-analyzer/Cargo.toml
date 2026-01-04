@@ -4,8 +4,9 @@ version.workspace = true
 edition.workspace = true
 
 [features]
-default = []
+default = ["parallel"]
 z3 = ["dep:z3"]
+parallel = ["dep:rayon"]
 
 [dependencies]
 engine-core = { path = "../engine-core" }
@@ -14,6 +15,6 @@ engine-script = { path = "../engine-script" }
 holdsmith-parser = { path = "../holdsmith-parser" }
 holdsmith-compiler = { path = "../holdsmith-compiler" }
 z3 = { workspace = true, optional = true }
-rayon = { workspace = true }
+rayon = { workspace = true, optional = true }
 thiserror = { workspace = true }
 smol_str = { workspace = true }

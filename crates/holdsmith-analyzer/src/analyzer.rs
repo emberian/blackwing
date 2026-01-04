@@ -191,13 +191,25 @@ fn analyze_reachability(cfg: &SceneCfg, result: &mut AnalysisResult) {
 ///
 /// This function:
 /// 1. Encodes scene requirements as preconditions
-/// 2. Encodes each choice condition as a Z3 formula
-/// 3. Checks if conditions are impossible (unsatisfiable) or tautological (always true)
+/// 2. Applies effects from incoming edges (path-sensitive analysis)
+/// 3. Applies on_enter effects for the current passage
+/// 4. Encodes each choice condition as a Z3 formula
+/// 5. Checks if conditions are impossible (unsatisfiable) or tautological (always true)
 #[cfg(feature = "z3")]
 fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
+    use crate::cfg::CfgEdge;
     use crate::condition_encoder::{ConditionEncoder, EncodedCondition};
+    use std::collections::HashMap;
 
     let ctx = create_context();
+
+    // Build map of incoming edges for each passage (for path-sensitive analysis)
+    let mut incoming_edges: HashMap<usize, Vec<&CfgEdge>> = HashMap::new();
+    for edge in &cfg.edges {
+        if let CfgTarget::Node(target) = edge.to {
+            incoming_edges.entry(target.0).or_default().push(edge);
+        }
+    }
 
     // For each passage, check if any choice conditions are impossible or tautological
     for node in &cfg.nodes {
@@ -228,6 +240,36 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
                 if let EncodedCondition::Bool(req_constraint) = encoder.encode_script(&cfg.requirements_source) {
                     state.assert_constraint(&req_constraint);
                 }
+            }
+
+            // Path-sensitive analysis: apply effects from incoming edges
+            // For passages with a unique incoming edge, we can precisely track the effects.
+            // For passages with multiple incoming edges, we take a conservative approach.
+            if passage_idx > 0 {
+                if let Some(incoming) = incoming_edges.get(&passage_idx) {
+                    if incoming.len() == 1 {
+                        // Single incoming edge - apply its effects precisely
+                        let incoming_edge = incoming[0];
+                        if let Some(ref effects_analysis) = incoming_edge.effects_analysis {
+                            state.apply_writes(effects_analysis);
+                        }
+                        // Also apply on_enter effects from the source passage
+                        if let Some(source_node) = cfg.node(incoming_edge.from) {
+                            if let Some(ref source_on_enter) = source_node.on_enter_analysis {
+                                state.apply_writes(source_on_enter);
+                            }
+                        }
+                    }
+                    // For multiple incoming edges, we'd need to:
+                    // - Find common effects (intersection)
+                    // - Or analyze each path separately
+                    // For now, we don't apply any accumulated effects (conservative)
+                }
+            }
+
+            // Apply on_enter effects for the current passage
+            if let Some(ref on_enter) = node.on_enter_analysis {
+                state.apply_writes(on_enter);
             }
 
             // Encode the choice condition
@@ -306,9 +348,16 @@ pub fn analyze_scenes(scenes: &[Scene]) -> Vec<AnalysisResult> {
 }
 
 /// Analyze multiple scenes in parallel using rayon.
+#[cfg(feature = "parallel")]
 pub fn analyze_scenes_parallel(scenes: &[Scene]) -> Vec<AnalysisResult> {
     use rayon::prelude::*;
     scenes.par_iter().map(analyze_scene).collect()
+}
+
+/// Fallback for when parallel feature is disabled (e.g., WASM).
+#[cfg(not(feature = "parallel"))]
+pub fn analyze_scenes_parallel(scenes: &[Scene]) -> Vec<AnalysisResult> {
+    analyze_scenes(scenes)
 }
 
 #[cfg(test)]
@@ -505,5 +554,127 @@ mod tests {
         // Should detect the tautological choice
         assert_eq!(result.tautological_choices.len(), 1);
         assert_eq!(result.tautological_choices[0].choice_text.as_str(), "Always available");
+    }
+
+    // ==================== BUG DEMONSTRATION TESTS ====================
+    // These tests demonstrate bugs in the current analysis that need fixing.
+
+    #[cfg(feature = "z3")]
+    #[test]
+    fn test_bug_on_enter_effects_not_tracked() {
+        // BUG: on_enter effects are not tracked when analyzing choice conditions.
+        //
+        // Scenario:
+        // - Scene requires credits >= 100
+        // - Passage on_enter sets credits to 0
+        // - Choice requires credits >= 50
+        //
+        // Current (buggy) behavior: Reports choice as tautological (100 >= 50)
+        // Correct behavior: Should report choice as IMPOSSIBLE (0 >= 50 is false)
+        let scene = Scene {
+            id: SceneId::new("test_on_enter_bug"),
+            title: "On-Enter Bug".into(),
+            tags: Tags::default(),
+            context: None,
+            weight: 10,
+            cooldown: 0,
+            rhai_requirements: r#"resource("credits") >= 100"#.into(),
+            passages: vec![
+                Passage {
+                    text: "Start".into(),
+                    // This effect sets credits to 0, but analyzer ignores it!
+                    rhai_on_enter: Some(r#"set_resource("credits", 0)"#.into()),
+                    choices: vec![
+                        Choice {
+                            text: "Should be impossible".into(),
+                            next: Navigation::End,
+                            // After on_enter, credits = 0, so this should be impossible
+                            rhai_condition: r#"resource("credits") >= 50"#.into(),
+                            rhai_effects: Default::default(),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = analyze_scene(&scene);
+
+        // After applying on_enter effects, the analyzer should see that:
+        // - Scene requires credits >= 100, so we enter with credits >= 100
+        // - on_enter sets credits = 0
+        // - Choice requires credits >= 50, but credits = 0 after on_enter
+        // Therefore the choice is IMPOSSIBLE
+        assert_eq!(result.tautological_choices.len(), 0,
+            "Choice should not be tautological - on_enter sets credits to 0");
+        assert_eq!(result.impossible_choices.len(), 1,
+            "Choice should be impossible - credits = 0 after on_enter, but condition requires >= 50");
+        assert_eq!(result.impossible_choices[0].choice_text.as_str(), "Should be impossible");
+    }
+
+    #[cfg(feature = "z3")]
+    #[test]
+    fn test_path_sensitive_effect_tracking() {
+        // Test: Effects from a prior choice should be tracked when analyzing subsequent passages.
+        //
+        // Scenario:
+        // - Scene requires credits >= 0 (establishes baseline)
+        // - Passage 0, Choice 0: gives +200 credits, goes to passage 1
+        // - Passage 1, Choice 0: requires credits >= 100
+        //
+        // With path-sensitive analysis:
+        // - We know credits >= 0 from requirements
+        // - Choice effects add +200, so credits >= 200 when entering passage 1
+        // - Choice condition credits >= 100 is always true (200 >= 100)
+        // - Therefore the choice should be detected as tautological
+        let scene = Scene {
+            id: SceneId::new("test_path_sensitive"),
+            title: "Path Sensitive Test".into(),
+            tags: Tags::default(),
+            context: None,
+            weight: 10,
+            cooldown: 0,
+            rhai_requirements: r#"resource("credits") >= 0"#.into(), // Establish baseline
+            passages: vec![
+                Passage {
+                    text: "Passage 0".into(),
+                    rhai_on_enter: None,
+                    choices: vec![
+                        Choice {
+                            text: "Get rich".into(),
+                            next: Navigation::Passage(1),
+                            rhai_condition: Default::default(),
+                            // This gives +200 credits
+                            rhai_effects: r#"modify_resource("credits", 200)"#.into(),
+                        },
+                    ],
+                },
+                Passage {
+                    text: "Passage 1".into(),
+                    rhai_on_enter: None,
+                    choices: vec![
+                        Choice {
+                            text: "Spend some".into(),
+                            next: Navigation::End,
+                            // After getting +200 with initial >= 0, we have >= 200
+                            // So >= 100 is always true
+                            rhai_condition: r#"resource("credits") >= 100"#.into(),
+                            rhai_effects: Default::default(),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = analyze_scene(&scene);
+
+        // With path-sensitive analysis, the choice should be tautological:
+        // - Initial credits >= 0 (from requirements)
+        // - After +200, credits >= 200
+        // - Condition credits >= 100 is always true when credits >= 200
+        assert_eq!(result.impossible_choices.len(), 0,
+            "Choice should not be impossible");
+        assert_eq!(result.tautological_choices.len(), 1,
+            "Choice should be tautological - credits >= 200 after effect, so >= 100 is always true");
+        assert_eq!(result.tautological_choices[0].choice_text.as_str(), "Spend some");
     }
 }
