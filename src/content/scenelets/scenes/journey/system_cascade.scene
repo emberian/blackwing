@@ -1,0 +1,75 @@
+---
+id: journey_system_cascade
+title: Cascade Failure
+tags: [danger, technical]
+context: journey
+weight: 10
+cooldown: 6
+---
+
+=== intro
+
+It starts with a flicker in your navigation subsystem. Then power fluctuations 
+in the cargo hold. Then—
+
+Warnings flood your consciousness. Multiple systems failing, each failure 
+triggering another. A cascade, spreading through your infrastructure like 
+disease through flesh.
+
+You have seconds to decide.
+
+* [Isolate and restart affected systems]
+  -> isolate
+
+* [Emergency shutdown—go dark]
+  -> shutdown
+
+* [Ride it out, trust your redundancies]
+  -> ride
+
+=== isolate
+
+You partition your consciousness, cutting off the infected systems. It feels like 
+losing fingers. The cascade slows, stops—but not before it claims your secondary 
+navigation array.
+
+The restart takes time. You drift in the dark, running on minimal power, 
+rebuilding yourself piece by piece.
+
+* [Complete the restart]
+  ~ supplies -= 8
+  ~ chronicle "System Cascade"
+    Suffered a cascade failure. Lost secondary navigation, but contained the damage.
+  -> END
+
+=== shutdown
+
+You go cold. Everything stops—thought, sensation, movement. For an eternal 
+instant, you are nothing.
+
+Then: restart. Systems coming online one by one, clean, uncorrupted. The cascade 
+burned itself out against dead circuits.
+
+But you've lost time. And fuel. Your reserves burned to keep core functions 
+alive during the blackout.
+
+* [Resume course]
+  ~ fuel -= 12
+  ~ damage integrity 5
+  ~ chronicle "Emergency Shutdown"
+    Initiated emergency shutdown during cascade failure. Lost time and fuel, but systems are clean.
+  -> END
+
+=== ride
+
+You trust your design. The redundancies hold—barely. The cascade washes through 
+your systems and ebbs, leaving damage in its wake.
+
+You're still flying. That's something.
+
+* [Assess the damage]
+  ~ damage hull 10
+  ~ supplies -= 5
+  ~ chronicle "System Cascade"
+    Rode out a cascade failure. Hull and systems took damage, but we're still operational.
+  -> END

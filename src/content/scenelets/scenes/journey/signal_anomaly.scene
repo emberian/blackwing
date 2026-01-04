@@ -1,0 +1,60 @@
+---
+id: journey_signal_anomaly
+title: Signal in the Dark
+tags: [discovery, mystery]
+context: journey
+weight: 8
+cooldown: 5
+requires:
+  shipTags: [sensor]
+---
+
+=== intro
+
+Your sensors catch something that shouldn't exist—a signal, weak but 
+coherent, broadcasting on a frequency reserved for pre-Cataclysm 
+emergency channels.
+
+The source is off your plotted course. Investigation would cost fuel 
+and time.
+
+But someone—or something—is still using protocols that died with 
+humanity.
+
+* [Investigate the signal]
+  ~ fuel -= 6
+  -> investigate
+
+* [Log coordinates and continue]
+  ~ flag signal_logged
+  ~ chronicle "Anomalous Signal"
+    Detected a signal on pre-Cataclysm emergency frequencies. Logged coordinates for future investigation.
+  -> END
+
+* [Ignore it]
+  -> END
+
+=== investigate
+
+The signal leads to a debris field—the scattered remains of what might 
+have been a research station. Among the wreckage, a single beacon pulses 
+with that ancient frequency.
+
+Automated. Triggered by your approach. It's been calling for 127 years 
+for someone who will never come.
+
+In the debris nearby, you find salvageable materials.
+
+* [Take what you can use]
+  ~ credits += 35
+  ~ flag signal_investigated
+  ~ chronicle "Ancient Signal"
+    Traced a pre-Cataclysm emergency signal to a destroyed research station. Found salvage among the debris.
+  -> END
+
+* [Shut down the beacon]
+  ~ integrity += 5
+  ~ flag signal_investigated
+  ~ chronicle "Silenced Beacon"
+    Found a pre-Cataclysm distress beacon still calling for help. Finally shut it down.
+  -> END

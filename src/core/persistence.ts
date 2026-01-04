@@ -1,7 +1,7 @@
 import type { GameState, AchievementId, AchievementState } from './types.js';
 
-const SAVE_KEY = 'cargo_hold_save';
-const META_KEY = 'cargo_hold_meta';
+const SAVE_KEY = 'blackwing_save';
+const META_KEY = 'blackwing_meta';
 const SCHEMA_VERSION = 2;
 
 export interface MetaState {
@@ -175,7 +175,7 @@ export function downloadSaveFile(gameState: GameState, metaState: MetaState): vo
   
   const a = document.createElement('a');
   a.href = url;
-  a.download = `cargo-hold-save-${new Date().toISOString().split('T')[0]}.json`;
+  a.download = `blackwing-save-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

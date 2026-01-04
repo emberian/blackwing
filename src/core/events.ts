@@ -141,7 +141,7 @@ export function applyEffects(
       fuel: Math.max(0, newState.resources.fuel + (effects.resources.fuel ?? 0)),
       supplies: Math.max(0, newState.resources.supplies + (effects.resources.supplies ?? 0)),
       hull: Math.max(0, Math.min(newState.ship.maxHull, newState.resources.hull + (effects.resources.hull ?? 0))),
-      morale: Math.max(0, Math.min(100, newState.resources.morale + (effects.resources.morale ?? 0))),
+      integrity: Math.max(0, Math.min(100, newState.resources.integrity + (effects.resources.integrity ?? 0))),
     };
   }
   
@@ -198,10 +198,10 @@ export function applyEffects(
         hull: Math.max(0, newState.resources.hull - effects.damage.hull),
       };
     }
-    if (effects.damage.morale) {
+    if (effects.damage.integrity) {
       newState.resources = {
         ...newState.resources,
-        morale: Math.max(0, newState.resources.morale - effects.damage.morale),
+        integrity: Math.max(0, newState.resources.integrity - effects.damage.integrity),
       };
     }
   }

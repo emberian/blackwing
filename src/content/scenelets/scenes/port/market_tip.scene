@@ -1,0 +1,62 @@
+---
+id: port_market_tip
+title: Market Intelligence
+tags: [trade, information]
+context: port
+weight: 9
+cooldown: 4
+---
+
+=== intro
+
+An information broker sidles up on a secure channel—one of the 
+station's regular fixtures. They deal in data: routes, prices, 
+movements.
+
+"I have something you might find profitable. Market movements. 
+Fifty credits for the full package."
+
+Information is currency. The question is whether this particular 
+information is worth the price.
+
+* [Pay for the intel]
+  ~ credits -= 50
+  -> intel
+
+* [Negotiate]
+  -> negotiate
+
+* [Decline]
+  ~ chronicle "Market Tip"
+    An information broker offered market intelligence. Declined.
+  -> END
+
+=== negotiate
+
+"Thirty," you counter.
+
+"Forty. That's as low as I go. Information this fresh, I could 
+sell to three other traders before you finish docking."
+
+* [Pay forty]
+  ~ credits -= 40
+  -> intel
+
+* [Walk away]
+  ~ chronicle "Market Tip"
+    Negotiated with an information broker. Couldn't reach a deal.
+  -> END
+
+=== intel
+
+The data packet arrives: price fluctuations, supply shortages, 
+a Forgeborn contract opening up that hasn't hit public channels yet.
+
+Solid intelligence. If you act fast, you can make the investment 
+back several times over.
+
+* [Return to your business]
+  ~ flag market_tip_received
+  ~ chronicle "Market Intelligence"
+    Purchased market intelligence from a broker. Promising leads acquired.
+  -> END

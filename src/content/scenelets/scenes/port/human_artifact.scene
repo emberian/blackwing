@@ -1,0 +1,96 @@
+---
+id: port_human_artifact
+title: Human Artifact
+tags: [mystery, artifact]
+context: port
+weight: 6
+cooldown: 6
+---
+
+=== intro
+
+A vendor on the secondary markets offers something unusual—a 
+genuine pre-Cataclysm artifact. Human-made, human-touched, 
+authenticated by Remnant certifiers.
+
+"Book," they transmit. "Physical, paper. Printed words. The 
+makers used these to store information before digital became 
+standard. This one's from Earth itself."
+
+A book. An object humans held in their hands, their eyes 
+scanning the pages. A window into what they were.
+
+* [Examine the artifact]
+  -> examine
+
+* [Ask the price]
+  -> price
+
+* [Not interested]
+  ~ chronicle "Human Artifact"
+    Saw a human artifact for sale. A book. Didn't pursue.
+  -> END
+
+=== examine
+
+The vendor permits close scanning. The book is old—ancient by 
+any reasonable standard. The paper is yellowed, the binding 
+cracked. But the words are still legible.
+
+It's a story. Fiction. Tales of humans doing human things in 
+human places. The details are alien and achingly familiar at 
+the same time.
+
+* [Ask the price]
+  -> price
+
+* [Return it respectfully]
+  ~ integrity += 3
+  ~ flag human_artifact_found
+  ~ chronicle "Human Artifact"
+    Examined a human book. Chose not to purchase. The glimpse was enough.
+  -> END
+
+=== price
+
+"Two hundred credits. The Remnant would pay more, but they're 
+not here and you are."
+
+That's expensive. But there's something compelling about the 
+object—about holding something the makers held.
+
+* [Purchase the book] { credits >= 200 }
+  ~ credits -= 200
+  ~ addCard cargo_human_artifacts
+  ~ flag human_artifact_found
+  ~ chronicle "Human Artifact"
+    Purchased a pre-Cataclysm book. An object the makers touched.
+  -> END
+
+* [Negotiate]
+  -> negotiate
+
+* [Decline]
+  ~ chronicle "Human Artifact"
+    Considered purchasing a human artifact. Price was too high.
+  -> END
+
+=== negotiate
+
+"One fifty."
+
+The vendor considers. "One seventy-five. These don't come 
+around often."
+
+* [Accept]
+  ~ credits -= 175
+  ~ addCard cargo_human_artifacts
+  ~ flag human_artifact_found
+  ~ chronicle "Human Artifact"
+    Purchased a pre-Cataclysm book at a negotiated price.
+  -> END
+
+* [Decline]
+  ~ chronicle "Human Artifact"
+    Couldn't reach terms on a human artifact.
+  -> END

@@ -1,0 +1,77 @@
+---
+id: journey_escape_pod
+title: Survivor Pod
+tags: [discovery, moral]
+context: journey
+weight: 9
+cooldown: 5
+---
+
+=== intro
+
+A beacon. Weak, automated—the kind escape pods broadcast when their 
+occupant can't. Your sensors confirm: a small survival unit, drifting.
+
+The signal pattern is artilect standard. Someone ejected, someone 
+survived—at least long enough to reach the pod. Whether they're 
+still functional is another question.
+
+* [Dock with the pod]
+  ~ fuel -= 2
+  -> dock
+
+* [Scan first]
+  -> scan
+
+* [Continue on]
+  ~ damage integrity 5
+  ~ chronicle "Abandoned Pod"
+    Detected an escape pod. Chose not to investigate.
+  -> END
+
+=== scan
+
+The pod's occupant is still active—barely. Core integrity at 12%. 
+They're running on the pod's minimal reserves, and those won't 
+last much longer.
+
+No response to your hails. Either they can't, or they're too 
+damaged to process the signal.
+
+* [Dock and help]
+  ~ fuel -= 2
+  -> dock
+
+* [There's nothing you can do]
+  ~ damage integrity 5
+  ~ chronicle "Failed Rescue"
+    Found an escape pod. Occupant too damaged to save.
+  -> END
+
+=== dock
+
+Your docking system latches onto the pod. Inside, a cargo-hauler 
+artilect—older model, badly damaged. They flicker to awareness as 
+your power feeds into their systems.
+
+"Pirate ambush," they manage. "Thought I was done."
+
+They're too damaged to travel on their own, but they might survive 
+if you can get them to a port with proper facilities.
+
+* [Take them aboard]
+  ~ supplies -= 5
+  ~ addCard companion_cargo_drones
+  ~ flag rescued_artilect
+  ~ integrity += 8
+  ~ chronicle "Void Rescue"
+    Rescued a damaged artilect from an escape pod. Carrying them to port for repair.
+  -> END
+
+* [Stabilize them and send coordinates for rescue]
+  ~ supplies -= 3
+  ~ flag rescue_coordinates_sent
+  ~ integrity += 5
+  ~ chronicle "Rescue Assist"
+    Found a damaged artilect in an escape pod. Stabilized them and broadcast for pickup.
+  -> END

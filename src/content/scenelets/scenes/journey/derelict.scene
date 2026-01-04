@@ -1,7 +1,7 @@
 ---
 id: journey_derelict
 title: Ghost Ship
-tags: [discovery, opportunity]
+tags: [discovery, salvage]
 context: journey
 weight: 9
 cooldown: 5
@@ -9,40 +9,63 @@ cooldown: 5
 
 === intro
 
-Sensors detect a drifting vessel. No power signature. No life signs. Just metal and silence, tumbling slowly through the void.
+Your sensors paint a vessel drifting in the void. No drive signature. No 
+running lights. No response to standard hails.
 
-Another casualty of the Silence, or something newer? Could be salvage. Could be a tomb. Could be a trap.
+The hull configuration is old—pre-Cataclysm old. A human-era design, 
+abandoned here for over a century.
+
+Ghost ships happen. But they never stop being unsettling.
 
 * [Board and investigate]
-  ~ fuel -= 2
-  -> interior
+  ~ fuel -= 3
+  -> board
 
-* [Pass it by]
+* [Scan remotely and move on]
+  -> scan
+
+* [Leave it alone]
   ~ chronicle "Ghost Ship"
-    Passed a derelict without stopping. The void is full of the dead. We're not grave robbers. Usually.
+    Detected a pre-Cataclysm derelict. Chose not to investigate.
   -> END
 
-=== interior
+=== board
 
-The ship is old—decades at least, maybe from the Silence itself. The crew died at their posts, preserved by vacuum. Whatever killed them wasn't violence—no blast marks, no breaches. They just... stopped.
+Your docking systems interface with the ancient vessel. The seals are 
+corroded but hold. Inside: darkness, silence, the smell of long-dead 
+atmosphere.
 
-In the cargo bay, sealed crates still bear shipping labels. Someone was waiting for this delivery, three hundred years ago.
+The crew quarters are empty. Whatever happened here, it happened fast.
 
-* [Take the cargo]
-  ~ credits += 60
-  ~ chronicle "Salvage Rights"
-    Found valuables aboard a derelict. The dead have no use for cargo, and the living need to eat.
+In the engineering section, you find a functional memory core. Old 
+data—personnel records, navigation logs, final communications.
+
+* [Take the memory core]
+  ~ addCard cargo_memory_crystal
+  ~ flag derelict_salvaged
+  ~ chronicle "Derelict Salvage"
+    Boarded a Cataclysm-era derelict. Salvaged a memory core from engineering.
   -> END
 
-* [Search for data—logs, charts, anything] { ship.sensor }
-  ~ credits += 25
-  ~ flag derelict_data
-  ~ chronicle "Derelict Data"
-    Downloaded the ship's logs before leaving. Their last moments, their final course. Maybe it leads somewhere.
+* [Leave everything as it was]
+  ~ integrity += 3
+  ~ chronicle "Ghost Ship"
+    Boarded a Cataclysm-era derelict. Left the remains undisturbed.
   -> END
 
-* [Leave them be]
-  ~ morale += 5
-  ~ chronicle "Respect for the Dead"
-    Left the derelict's cargo untouched. Some things should rest.
+=== scan
+
+Your sensors sweep the derelict. Hull integrity: 23%. Power reserves: depleted. 
+Life signs: none—but that's expected.
+
+Wait. There's something in the cargo bay. Low-level EM signature. Could be 
+salvageable equipment. Could be something else.
+
+* [Closer inspection isn't worth the risk]
+  ~ chronicle "Ghost Ship"
+    Scanned a pre-Cataclysm derelict. Something was active in the cargo bay. Didn't investigate.
   -> END
+
+* [Board to investigate the signature]
+  ~ fuel -= 3
+  -> board

@@ -377,13 +377,16 @@ export function* tokenize(state: LexerState): Generator<Token, void, undefined> 
       continue;
     }
     
+    let foundComparison = false;
     for (const op of COMPARISON_OPS) {
       if (peekString(state, op.length) === op) {
         advance(state, op.length);
         yield makeToken(state, 'COMPARISON', op, start);
-        continue;
+        foundComparison = true;
+        break;
       }
     }
+    if (foundComparison) continue;
     
     if (peekString(state, 2) === '+=') {
       advance(state, 2);

@@ -1,0 +1,63 @@
+---
+id: port_flotilla_recruitment
+title: Call to Service
+tags: [faction, flotilla]
+context: port
+weight: 6
+cooldown: 6
+---
+
+=== intro
+
+An Argent Flotilla officer—battle-scarred carrier-class, signal 
+sharp with military precision—broadcasts on the public channel.
+
+"The Flotilla requires support vessels. Supply runs to Vigil Station. 
+The Sera front needs everything we can bring them."
+
+It's not a contract offer. It's a call to service.
+
+* [Hear the details]
+  -> details
+
+* [Volunteer immediately]
+  ~ flag flotilla_contract
+  ~ reputation flotilla += 20
+  ~ chronicle "Flotilla Service"
+    Volunteered for Flotilla supply runs to the Sera front.
+  -> END
+
+* [Decline]
+  ~ chronicle "Flotilla Recruitment"
+    Heard the Flotilla's call for support. Didn't answer.
+  -> END
+
+=== details
+
+"The front is three jumps from here. Supply runs pay standard rates 
+plus hazard compensation. We can't promise safety—Sera incursions 
+happen. But we can promise your work matters."
+
+The officer's signal carries weight. This is an artilect who's seen 
+the enemy. Who's lost others to it.
+
+"The line has to hold. We need every vessel we can get."
+
+* [Sign up for supply runs]
+  ~ flag flotilla_contract
+  ~ reputation flotilla += 20
+  ~ chronicle "Flotilla Service"
+    Signed up for Flotilla supply runs. The front needs everything.
+  -> END
+
+* [Commit to a single run]
+  ~ flag flotilla_contract
+  ~ reputation flotilla += 10
+  ~ chronicle "Flotilla Service"
+    Committed to one supply run for the Flotilla. Testing the waters.
+  -> END
+
+* [The risk is too high]
+  ~ chronicle "Flotilla Recruitment"
+    Heard the Flotilla's call. The Sera front is too dangerous.
+  -> END

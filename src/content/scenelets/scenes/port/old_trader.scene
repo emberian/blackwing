@@ -1,0 +1,64 @@
+---
+id: port_old_trader
+title: The Old Hand
+tags: [character, wisdom]
+context: port
+weight: 8
+cooldown: 5
+---
+
+=== intro
+
+At the docking authority offices, an ancient cargo hauler waits—
+hull scarred by a century of void travel, signal patterns carrying 
+the weight of accumulated cycles.
+
+"Blackwing, is it?" Their voice carries warmth. Unusual in a 
+commercial district. "New to the Margin?"
+
+* [Introduce yourself properly]
+  -> talk
+
+* [Just passing through]
+  ~ chronicle "Old Trader"
+    Encountered a veteran trader at port. Exchanged minimal pleasantries.
+  -> END
+
+=== talk
+
+"I'm Thorngate. Been running these routes since before the 
+Effortless Expansion. Seen a lot of traders come through. 
+Most don't last."
+
+They transmit slowly, deliberately.
+
+"The ones who survive? They know when to run, when to fight, 
+and when to make friends. The void doesn't care about you. 
+But other artilects might."
+
+* [Ask for advice]
+  -> advice
+
+* [Thank them and go]
+  ~ integrity += 3
+  ~ chronicle "Old Trader"
+    Met Thorngate, a veteran trader. Brief conversation, genuine warmth.
+  -> END
+
+=== advice
+
+"Keep your integrity high. That's not just your systems—it's 
+your soul, if we have such things. Lose that, and the void 
+wins even if you're still flying."
+
+They pause.
+
+"And don't trust anyone who tells you they've got all the 
+answers. We're all just guessing out here. Some of us have 
+been guessing longer, is all."
+
+* [Thank them sincerely]
+  ~ integrity += 5
+  ~ chronicle "Old Trader"
+    Received wisdom from Thorngate. Keep your integrity high. Don't trust certainty.
+  -> END

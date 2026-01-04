@@ -27,10 +27,10 @@ import type {
 } from './ast.js';
 import { ParseError, ParseErrorCode } from './errors.js';
 
-type ResourceName = 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale';
+type ResourceName = 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale' | 'integrity';
 type ComparisonOp = '>=' | '<=' | '>' | '<' | '==' | '!=';
 
-const RESOURCES = new Set<ResourceName>(['credits', 'fuel', 'supplies', 'hull', 'morale']);
+const RESOURCES = new Set<ResourceName>(['credits', 'fuel', 'supplies', 'hull', 'morale', 'integrity']);
 
 function isResource(s: string): s is ResourceName {
   return RESOURCES.has(s as ResourceName);
@@ -531,11 +531,11 @@ function parseEffect(state: ParserState): Effect {
   }
   
   if (keyword === 'damage') {
-    const targetStr = consume(state, 'IDENTIFIER', 'Expected damage target (hull or morale)').value;
-    if (targetStr !== 'hull' && targetStr !== 'morale') {
+    const targetStr = consume(state, 'IDENTIFIER', 'Expected damage target (hull, morale, or integrity)').value;
+    if (targetStr !== 'hull' && targetStr !== 'morale' && targetStr !== 'integrity') {
       throw new ParseError(
         ParseErrorCode.INVALID_EFFECT,
-        'Damage target must be hull or morale',
+        'Damage target must be hull, morale, or integrity',
         current(state).span
       );
     }

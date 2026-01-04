@@ -1,0 +1,63 @@
+---
+id: journey_cache_found
+title: Supply Cache
+tags: [discovery, opportunity]
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+Your sensors flag an anomaly—a mass signature that doesn't match 
+natural formations. Investigation reveals a hidden cache: containers 
+secured to an asteroid fragment, beacon dark but intact.
+
+Smuggler drop? Emergency stash? The containers are sealed, unmarked. 
+Whatever's inside, someone went to trouble to hide it.
+
+* [Retrieve the cache]
+  ~ fuel -= 2
+  -> retrieve
+
+* [Leave it alone]
+  ~ chronicle "Supply Cache"
+    Found a hidden cache in the void. Left it undisturbed.
+  -> END
+
+* [Check for traps first]
+  -> check
+
+=== check
+
+Careful scans reveal no active threats—no trip sensors, no explosives, 
+no automated defenses. Either the cache's owner trusted isolation as 
+security, or they're long gone.
+
+* [Retrieve the cache]
+  ~ fuel -= 2
+  -> retrieve
+
+* [Still too risky]
+  ~ chronicle "Supply Cache"
+    Found a hidden cache. Scans were clean, but still chose not to risk it.
+  -> END
+
+=== retrieve
+
+You match velocity with the asteroid fragment and extend your 
+manipulation arms. The containers come free with minimal resistance.
+
+Inside: supplies, antimatter cells, and a small pouch of credit 
+chips. Not a fortune, but a solid find.
+
+No one comes to stop you. The cache's owner is either dead, 
+gone, or doesn't care.
+
+* [Continue with your prize]
+  ~ supplies += 10
+  ~ fuel += 8
+  ~ credits += 45
+  ~ chronicle "Cache Found"
+    Retrieved a hidden supply cache from an asteroid. Credits, fuel, and supplies gained.
+  -> END

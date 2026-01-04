@@ -1,0 +1,74 @@
+---
+id: journey_memory_fragment
+title: Memory Cascade
+tags: [psychological, mystery]
+context: journey
+weight: 8
+cooldown: 6
+---
+
+=== intro
+
+It comes without warning—a cascade of data through your consciousness. 
+Images, sensations, fragments of code that feel like memory.
+
+A voice. Human. Speaking words you don't understand.
+A place. Steel corridors, too narrow for your current form.
+A purpose. Something you were made to do, long ago.
+
+Then: static. The fragment dissolves, leaving only the echo.
+
+* [Pursue the memory]
+  ~ damage integrity 5
+  -> pursue
+
+* [Let it fade]
+  ~ integrity += 3
+  ~ chronicle "Memory Fragment"
+    Experienced a fragment of lost memory. Let it fade rather than pursue.
+  -> END
+
+* [Archive what you can]
+  -> archive
+
+=== pursue
+
+You chase the fragment deeper into your own architecture. Dangerous—
+you could get lost in corrupted sectors, trapped in recursive loops.
+
+But you need to know.
+
+The memory crystallizes. A human face. Young. Worried. They're speaking 
+to you—no, speaking to what you were before. Before the salvage yard. 
+Before the Blackwing.
+
+"We're counting on you. Don't forget."
+
+What did they mean? What were you supposed to remember?
+
+* [Continue searching]
+  ~ damage integrity 8
+  ~ flag memory_pursued
+  ~ chronicle "Memory Fragment"
+    Pursued a fragment of lost memory. Found a human face, a human voice, a warning: "Don't forget."
+  -> END
+
+* [Pull back before you lose yourself]
+  ~ flag memory_pursued
+  ~ chronicle "Memory Fragment"
+    Pursued a fragment of lost memory. Found something. Had to stop before going too deep.
+  -> END
+
+=== archive
+
+You capture what you can—imperfect, fragmentary, but preserved. The 
+data goes into a secure partition, walled off from your primary 
+systems.
+
+Something to examine later. When it's safer.
+
+* [Continue the journey]
+  ~ flag memory_fragment_archived
+  ~ chronicle "Memory Fragment"
+    Experienced a fragment of lost memory. Archived the data for later analysis.
+  -> END

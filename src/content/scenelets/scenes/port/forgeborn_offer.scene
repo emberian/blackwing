@@ -1,0 +1,69 @@
+---
+id: port_forgeborn_offer
+title: Forgeborn Contract
+tags: [faction, forgeborn]
+context: port
+weight: 7
+cooldown: 6
+---
+
+=== intro
+
+A Forgeborn representative makes contact—industrial-class artilect, 
+efficient in every signal pattern. No wasted bandwidth.
+
+"The Foundry requires hauling capacity. Raw materials to Crucible 
+Station. Standard rates plus preferred contractor status. Interested?"
+
+The Forgeborn are reliable employers. Work hard, pay fair, no 
+surprises. The downside: their contracts tend to be demanding.
+
+* [Hear the terms]
+  -> terms
+
+* [Decline politely]
+  ~ chronicle "Forgeborn Offer"
+    Received a Forgeborn contract offer. Declined.
+  -> END
+
+=== terms
+
+"Six-cycle commitment. Priority hauling of ore and refined materials. 
+Two hundred credits per run, minimum four runs. Performance bonuses 
+for efficiency."
+
+That's decent money for straightforward work. The commitment is the 
+question—six cycles locked into their schedule means less flexibility.
+
+* [Accept the contract]
+  ~ flag forgeborn_aligned
+  ~ reputation forgeborn += 15
+  ~ chronicle "Forgeborn Contract"
+    Accepted a hauling contract with the Forgeborn. Six cycles, four runs minimum.
+  -> END
+
+* [Negotiate shorter commitment]
+  -> negotiate
+
+* [Decline]
+  ~ chronicle "Forgeborn Offer"
+    Heard Forgeborn contract terms. Decided against the commitment.
+  -> END
+
+=== negotiate
+
+"Three cycles. Two runs minimum."
+
+The representative processes. "Four cycles. Two runs. Final offer."
+
+* [Accept the modified terms]
+  ~ flag forgeborn_aligned
+  ~ reputation forgeborn += 10
+  ~ chronicle "Forgeborn Contract"
+    Negotiated a modified contract with the Forgeborn. Four cycles, two runs.
+  -> END
+
+* [Decline]
+  ~ chronicle "Forgeborn Offer"
+    Couldn't reach terms with the Forgeborn.
+  -> END

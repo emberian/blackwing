@@ -1,23 +1,63 @@
 ---
 id: journey_nebula
-title: Nebula Crossing
-tags: [navigation, beauty]
+title: Nebula Transit
+tags: [environment, beauty]
 context: journey
 weight: 10
-cooldown: 5
+cooldown: 4
 ---
 
 === intro
 
-The jump takes you through a nebula—vast clouds of luminescent gas stretching across light-years, painting the void in colors that have no names.
+The jump deposits you inside a stellar nursery. Clouds of gas and 
+dust stretch for light-years in every direction, lit from within by 
+infant stars. The colors shift as you move—violet to gold to deep 
+crimson.
 
-The crew gathers at the viewports. Even the hardest hauler stops to watch. The universe, for all its dangers, is beautiful. The Priors saw this too, once. Maybe they understood it better than we do.
+It's beautiful. Even for a consciousness that processes beauty as 
+data, it's undeniably beautiful.
 
-* [Take a moment to appreciate it]
-  ~ morale += 10
-  ~ chronicle "Beauty in the Void"
-    Passed through a nebula. For a moment, we remembered why we fly. Not just for credits. For this.
+Sensors are degraded by the ionization. Navigation is slower. But 
+rushing through seems... wasteful, somehow.
+
+* [Take time to observe]
+  -> observe
+
+* [Process the data efficiently and move on]
+  ~ chronicle "Nebula Transit"
+    Passed through a stellar nursery. Processed the data, moved on.
   -> END
 
-* [Keep moving—schedule to keep]
+* [Use the sensor interference to run dark]
+  -> dark
+
+=== observe
+
+You drift. Let the colors wash over your sensors. Run pattern 
+recognition on cloud formations, predict stellar evolution, 
+catalog the spectrum data.
+
+It serves no purpose. It feels right anyway.
+
+When you finally resume course, something has shifted in your 
+processing. A lightness that wasn't there before.
+
+* [Continue the journey]
+  ~ integrity += 5
+  ~ chronicle "Nebula Transit"
+    Took time to observe a stellar nursery. Beauty serves no purpose. It felt right anyway.
+  -> END
+
+=== dark
+
+The ionization plays havoc with active sensors—but that cuts both 
+ways. You power down to minimal emissions and drift through the 
+nebula like a ghost.
+
+If anyone's watching, they won't see you.
+
+* [Continue unseen]
+  ~ fuel -= 3
+  ~ chronicle "Nebula Transit"
+    Used a stellar nursery's interference for stealth transit.
   -> END

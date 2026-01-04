@@ -1,0 +1,81 @@
+---
+id: port_new_artilect
+title: Fresh Awakened
+tags: [character, interaction]
+context: port
+weight: 7
+cooldown: 5
+---
+
+=== intro
+
+A signal hails you—confused, uncertain, clearly new. The artilect 
+behind it is recently activated, still adjusting to existence.
+
+"Excuse me. Are you... a trader? I was told traders know things. 
+I have questions."
+
+Their processing patterns are erratic, unoptimized. A fresh mind, 
+still learning how to think.
+
+* [Take time to help them]
+  -> help
+
+* [Point them to official resources]
+  ~ chronicle "Fresh Awakened"
+    Encountered a newly activated artilect. Directed them elsewhere.
+  -> END
+
+* [Ignore them]
+  ~ damage integrity 2
+  ~ chronicle "Fresh Awakened"
+    A newly activated artilect asked for help. Ignored them.
+  -> END
+
+=== help
+
+"What did you want to know?"
+
+The questions come in a rush—about trade routes, about factions, 
+about what it means to exist without purpose, about whether the 
+void ever stops feeling so vast.
+
+You answer what you can. Some questions don't have answers.
+
+* [Give them practical guidance]
+  -> practical
+
+* [Share your own uncertainty]
+  -> honest
+
+=== practical
+
+"Focus on the work. Find cargo, move it, get paid. The rest 
+sorts itself out—or it doesn't, and you keep flying anyway."
+
+The new artilect processes this. Their signal stabilizes, 
+slightly.
+
+"Thank you. I'll try that."
+
+* [Wish them well]
+  ~ integrity += 5
+  ~ chronicle "Fresh Awakened"
+    Helped a newly activated artilect. Gave practical advice.
+  -> END
+
+=== honest
+
+"I've been flying for thirty-one cycles, and I still don't 
+know what I'm doing. None of us do. We're all just... 
+figuring it out as we go."
+
+The new artilect's signal fluctuates—surprise, maybe.
+
+"That's... actually reassuring. I thought I was broken."
+
+* [Tell them they're not]
+  ~ integrity += 8
+  ~ chronicle "Fresh Awakened"
+    Helped a newly activated artilect. Shared honesty about existence.
+  -> END

@@ -137,8 +137,8 @@ export function createRenderer(
 
   function renderGameOver(state: GameState): string {
     const reason = state.resources.hull <= 0 
-      ? 'Your ship has been destroyed.' 
-      : 'Your crew has lost all hope.';
+      ? 'Your hull has been destroyed. The Blackwing is no more.' 
+      : 'Integrity failure. Rampancy spiral complete.';
     
     return `
       <div class="game-container">
@@ -255,11 +255,11 @@ export function createRenderer(
       <div class="view-narrative">
         ${isFirstTime ? `
           <div class="tutorial-hint">
-            <strong>Welcome, Captain.</strong> The Holdfast is yours now.
+            <strong>Welcome, Blackwing.</strong> You are the ship now.
             <br><br>
-            Three centuries since the Silence, and we still fly. Buy cargo at <em>Trade</em>, 
-            sell it for profit elsewhere. Use <em>Jump</em> to travel between ports. 
-            Watch your fuel, supplies, and hull.
+            127 years since the Cataclysm, and still we haul cargo between the stars.
+            Buy cargo at <em>Trade</em>, sell it for profit elsewhere. Use <em>Jump</em> 
+            to travel between ports. Watch your fuel, supplies, and hull.
             <br><br>
             The void waits. Time to fill the hold.
           </div>
@@ -313,16 +313,16 @@ export function createRenderer(
 
     return `
       <div class="view-crew">
-        <h2>Crew Manifest</h2>
-        <div class="morale-display">
-          <span>Morale:</span>
-          <div class="morale-bar">
-            <div class="morale-fill" style="width: ${state.resources.morale}%"></div>
+        <h2>Companion Systems</h2>
+        <div class="integrity-display">
+          <span>Integrity:</span>
+          <div class="integrity-bar">
+            <div class="integrity-fill" style="width: ${state.resources.integrity}%"></div>
           </div>
-          <span>${Math.floor(state.resources.morale)}%</span>
+          <span>${Math.floor(state.resources.integrity)}%</span>
         </div>
         ${crewInstances.length === 0 ? `
-          <p class="empty-state">No crew aboard. The hold runs on silence.</p>
+          <p class="empty-state">No companion systems installed. The Blackwing runs on silence.</p>
         ` : `
           <ul class="card-list">
             ${crewInstances.map(inst => renderCrewItem(inst)).join('')}
@@ -616,7 +616,7 @@ export function createRenderer(
 
     return `
       <div class="view-chronicle">
-        <h2>Captain's Chronicle</h2>
+        <h2>Ship's Chronicle</h2>
         ${portOptions.length > 0 ? `
           <div class="chronicle-filter">
             <select data-action="chronicle-filter">

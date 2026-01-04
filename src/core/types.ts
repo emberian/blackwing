@@ -1,8 +1,11 @@
 /**
- * CARGO HOLD - Core Type Definitions
+ * BLACKWING - Core Type Definitions
  * 
  * The fundamental types that define the game's state and mechanics.
  * Everything flows from these types.
+ * 
+ * You are an artilect—a sophont machine intelligence. You ARE the ship.
+ * The Blackwing is your body. Her hull is your skin. Her systems are your nerves.
  */
 
 // =============================================================================
@@ -93,6 +96,7 @@ export interface CardEffects {
     readonly cargoCapacity?: number;
     readonly journeySpeed?: number;
     readonly morale?: number;
+    readonly integrityMod?: number;
     readonly hullIntegrity?: number;
   };
   
@@ -151,7 +155,7 @@ export interface Resources {
   fuel: number;
   supplies: number;
   hull: number;
-  morale: number;
+  integrity: number;
 }
 
 export type ResourceBundle = Partial<Resources>;
@@ -424,8 +428,8 @@ export interface SceneletEffects {
   readonly reputation?: { faction: FactionId; amount: number };
   readonly triggerScenelet?: SceneletId;
   
-  /** Damage to ship/crew */
-  readonly damage?: { hull?: number; morale?: number; crewCasualties?: number };
+  /** Damage to ship/integrity */
+  readonly damage?: { hull?: number; integrity?: number };
 }
 
 // =============================================================================

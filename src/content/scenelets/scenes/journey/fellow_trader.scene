@@ -1,0 +1,60 @@
+---
+id: journey_fellow_trader
+title: Fellow Traveler
+tags: [interaction, trade]
+context: journey
+weight: 12
+cooldown: 3
+---
+
+=== intro
+
+Another vessel on the same vector—a free trader like yourself. They 
+hail you with the old protocols, the informal signals that mark 
+those who belong to no faction.
+
+"Running the same route, looks like. Want to share passage for a 
+while? Safer in pairs."
+
+* [Accept their company]
+  -> accept
+
+* [Exchange news and continue separately]
+  -> news
+
+* [Politely decline and move on]
+  ~ chronicle "Fellow Trader"
+    Encountered another free trader on the same route. Went our separate ways.
+  -> END
+
+=== accept
+
+You fall into formation with the other vessel—a modified bulk hauler, 
+patches visible on the hull. The pilot's signal is warm, easy.
+
+"Name's Junction. Run cargo out of Relay Nine mostly. You?"
+
+The journey passes faster with company. Junction shares route data, 
+warns you about a patrol they spotted two jumps back. When you reach 
+the next waypoint, they signal farewell.
+
+"Safe travels, Blackwing. Maybe we'll cross paths again."
+
+* [Continue the journey]
+  ~ integrity += 5
+  ~ chronicle "Shared Passage"
+    Traveled with another free trader for a while. Company helps in the void.
+  -> END
+
+=== news
+
+Junction shares what they know: market conditions at Crucible, 
+Flotilla patrols increasing near the Sera front, a rumor about 
+the Hollow Circuit opening new channels.
+
+You trade information in kind. Brief, professional, useful.
+
+* [Part ways]
+  ~ chronicle "Trader Exchange"
+    Exchanged news with a fellow free trader. Useful intelligence gathered.
+  -> END

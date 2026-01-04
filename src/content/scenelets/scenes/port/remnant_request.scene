@@ -1,0 +1,58 @@
+---
+id: port_remnant_request
+title: Preservation Mission
+tags: [faction, remnant]
+context: port
+weight: 7
+cooldown: 6
+---
+
+=== intro
+
+A Remnant curator approaches—their signal carries the distinctive 
+harmonics of those who spend too much time in human-era archives.
+
+"We seek a hauler. Delicate cargo. Human artifacts recovered from 
+a Cataclysm site. They must reach Verity Archives intact."
+
+The Remnant pay less than other factions, but their gratitude 
+tends to open other doors.
+
+* [Learn more about the cargo]
+  -> details
+
+* [Accept immediately]
+  ~ flag remnant_trusted
+  ~ reputation remnant += 20
+  ~ chronicle "Preservation Mission"
+    Accepted a preservation mission for the Remnant. Human artifacts to Verity Archives.
+  -> END
+
+* [Decline]
+  ~ chronicle "Remnant Request"
+    Declined a preservation mission for the Remnant.
+  -> END
+
+=== details
+
+"Personal effects. Photographs, jewelry, a child's toy. Objects 
+the makers held. Objects that remember their touch."
+
+The curator's signal wavers—something like grief in the modulation.
+
+"We cannot restore them. But we can preserve what they left behind."
+
+* [Accept the mission]
+  ~ flag remnant_trusted
+  ~ flag human_artifact_found
+  ~ reputation remnant += 20
+  ~ integrity += 5
+  ~ chronicle "Preservation Mission"
+    Accepted a preservation mission for the Remnant. Carrying objects the makers touched.
+  -> END
+
+* [Decline gently]
+  ~ damage integrity 3
+  ~ chronicle "Remnant Request"
+    Heard a Remnant curator's plea. Couldn't commit.
+  -> END

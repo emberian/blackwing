@@ -480,7 +480,7 @@ function handleContractComplete(
         fuel: newState.resources.fuel + (reward.fuel ?? 0),
         supplies: newState.resources.supplies + (reward.supplies ?? 0),
         hull: newState.resources.hull,
-        morale: Math.min(100, newState.resources.morale + (reward.morale ?? 0)),
+        integrity: Math.min(100, newState.resources.integrity + (reward.integrity ?? 0)),
       },
       cards: {
         ...newState.cards,
@@ -522,7 +522,7 @@ function handleContractAbandon(
         fuel: state.resources.fuel,
         supplies: state.resources.supplies,
         hull: state.resources.hull,
-        morale: Math.max(0, state.resources.morale - (penalty.morale ?? 10)),
+        integrity: Math.max(0, state.resources.integrity - (penalty.integrity ?? 10)),
       },
       cards: {
         ...state.cards,
@@ -617,7 +617,7 @@ function handleCrewDismiss(
       },
       resources: {
         ...state.resources,
-        morale: Math.max(0, state.resources.morale - 5),
+        integrity: Math.max(0, state.resources.integrity - 5),
       },
     },
     success: true,

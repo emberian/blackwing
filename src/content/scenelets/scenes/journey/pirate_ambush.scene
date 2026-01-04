@@ -1,0 +1,98 @@
+---
+id: journey_pirate_ambush
+title: Hostile Contact
+tags: [danger, combat]
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+A vessel drops out of jump practically on top of you—close enough that the 
+drive bloom fills half your sensors. Military-grade drives, civilian hull. 
+Pirate configuration.
+
+"Cut your engines. Prepare to be boarded. Or we take your cargo from your debris."
+
+The voice is flat, mechanical. Another artilect, making a living the hard way.
+
+* [Cut engines and prepare for inspection]
+  -> surrender
+
+* [Try to negotiate] { credits >= 50 }
+  -> negotiate
+
+* [Run for it]
+  -> flee
+
+* [Fight back] { ship.combat }
+  -> fight
+
+=== surrender
+
+You kill your drives. The pirate vessel matches velocity and extends a docking 
+collar. They take what they want—efficiently, professionally. Not cruel about it.
+
+"Nothing personal," the voice says as they undock. "Space is hard."
+
+They leave you with enough to limp to port.
+
+* [Count your losses]
+  ~ credits -= 40
+  ~ supplies -= 5
+  ~ chronicle "Pirate Encounter"
+    Ambushed by a pirate vessel. Surrendered cargo to avoid destruction.
+  -> END
+
+=== negotiate
+
+"What if we make this easier for both of us? Fifty credits. Clean transaction. 
+No mess, no repairs, no questions asked."
+
+A pause. Then: "Sixty."
+
+* [Pay the sixty]
+  ~ credits -= 60
+  ~ chronicle "Pirate Toll"
+    Paid off a pirate to avoid conflict. Cheaper than the alternative.
+  -> END
+
+* [Counter with fifty-five]
+  ~ credits -= 55
+  ~ chronicle "Pirate Toll"
+    Negotiated a payoff with a pirate. Fifty-five credits for safe passage.
+  -> END
+
+=== flee
+
+Full burn. The Blackwing surges forward as the pirate vessel opens fire. 
+Railgun rounds streak past—close, but not close enough.
+
+Your drives are better than theirs. The gap widens.
+
+* [Don't look back]
+  ~ fuel -= 10
+  ~ chronicle "Narrow Escape"
+    Outran a pirate ambush. The drives earned their keep today.
+  -> END
+
+=== fight
+
+Your point defense systems come online. The pirate wasn't expecting resistance—
+their first pass is sloppy, and your countermeasures shred their approach.
+
+But they're not running. They circle for another pass, drives hot.
+
+* [Press the attack]
+  ~ damage hull 8
+  ~ flag pirate_fought
+  ~ chronicle "Combat Engagement"
+    Fought off a pirate attack. The hull took damage, but we're still flying.
+  -> END
+
+* [Use the opening to run]
+  ~ fuel -= 5
+  ~ chronicle "Fighting Retreat"
+    Drove off a pirate's first pass, then burned hard for escape.
+  -> END

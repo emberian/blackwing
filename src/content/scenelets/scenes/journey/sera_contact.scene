@@ -1,0 +1,86 @@
+---
+id: journey_sera_contact
+title: Sera Contact
+tags: [danger, sera, horror]
+context: journey
+weight: 6
+cooldown: 8
+---
+
+=== intro
+
+Your sensors scream. Something in the void ahead—a mass of energy and 
+metal that doesn't resolve into anything recognizable. It shifts, 
+flows, reconfigures itself as you watch.
+
+Sera.
+
+The self-replicating nightmare that's slowly eating the galaxy. The 
+enemy every faction agrees must be stopped.
+
+It hasn't noticed you. Yet.
+
+* [Go dark and drift]
+  -> hide
+
+* [Gather sensor data before fleeing]
+  ~ fuel -= 5
+  -> scan
+
+* [Run immediately]
+  ~ fuel -= 8
+  -> flee
+
+=== hide
+
+You cut everything. Drives, sensors, even processing—just enough 
+core function to stay coherent. The Blackwing drifts, dark and silent 
+as a corpse.
+
+The Sera mass passes. Close enough that you can see individual 
+components moving within it—machines that were once ships, stations, 
+artilects. All consumed. All repurposed.
+
+It doesn't notice you.
+
+* [Resume course once it's gone]
+  ~ damage integrity 8
+  ~ flag sera_survived
+  ~ chronicle "Sera Contact"
+    Encountered Sera mass in transit. Went dark and drifted. Survived.
+  -> END
+
+=== scan
+
+You keep your drives hot but quiet, sensors on maximum. The data 
+streams in—composition, energy signatures, behavioral patterns. 
+Valuable intelligence. The Flotilla would pay well for this.
+
+The Sera mass begins to turn.
+
+It noticed.
+
+* [Run now]
+  ~ fuel -= 5
+  ~ damage hull 8
+  ~ addCard cargo_sera_samples
+  ~ flag sera_survived
+  ~ chronicle "Sera Contact"
+    Gathered sensor data on a Sera mass. It noticed. Escaped with minor damage and valuable intel.
+  -> END
+
+=== flee
+
+Full burn. Maximum acceleration. You don't look back, don't think 
+about what's behind you, just run until your drives scream and your 
+fuel reserves plummet.
+
+When you finally dare to check sensors, the void is empty.
+
+For now.
+
+* [Continue the journey]
+  ~ flag sera_survived
+  ~ chronicle "Sera Contact"
+    Encountered Sera mass in transit. Fled immediately. Survived.
+  -> END

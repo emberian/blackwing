@@ -7,29 +7,29 @@ export const ACHIEVEMENTS: Achievement[] = [
   // Journey Milestones
   {
     id: id('first_jump'),
-    name: 'First Steps',
-    description: 'Complete your first jump',
+    name: 'First Transit',
+    description: 'Complete your first journey',
     icon: '🚀',
     check: (state: GameState) => state.time.jumpsCompleted >= 1,
   },
   {
     id: id('seasoned_hauler'),
-    name: 'Seasoned Hauler',
-    description: 'Complete 10 jumps',
+    name: 'Working Vessel',
+    description: 'Complete 10 journeys',
     icon: '🌟',
     check: (state: GameState) => state.time.jumpsCompleted >= 10,
   },
   {
     id: id('void_veteran'),
     name: 'Void Veteran',
-    description: 'Complete 50 jumps',
+    description: 'Complete 50 journeys',
     icon: '⭐',
     check: (state: GameState) => state.time.jumpsCompleted >= 50,
   },
   {
-    id: id('century_pilot'),
-    name: 'Century Pilot',
-    description: 'Complete 100 jumps',
+    id: id('century_transit'),
+    name: 'Century of Transit',
+    description: 'Complete 100 journeys',
     icon: '💫',
     check: (state: GameState) => state.time.jumpsCompleted >= 100,
   },
@@ -43,18 +43,25 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: (state: GameState) => state.stats.contractsCompleted >= 1,
   },
   {
-    id: id('reliable_captain'),
-    name: 'Reliable Captain',
+    id: id('reliable_hauler'),
+    name: 'Reliable',
     description: 'Complete 5 contracts',
     icon: '🤝',
     check: (state: GameState) => state.stats.contractsCompleted >= 5,
   },
   {
-    id: id('merchant_prince'),
-    name: 'Merchant Prince',
+    id: id('professional'),
+    name: 'Professional',
     description: 'Complete 20 contracts',
     icon: '👑',
     check: (state: GameState) => state.stats.contractsCompleted >= 20,
+  },
+  {
+    id: id('legend'),
+    name: 'Trade Legend',
+    description: 'Complete 50 contracts',
+    icon: '🏆',
+    check: (state: GameState) => state.stats.contractsCompleted >= 50,
   },
   
   // Exploration
@@ -73,8 +80,8 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: (state: GameState) => state.stats.portsVisited >= 5,
   },
   {
-    id: id('cartographer'),
-    name: 'Cartographer',
+    id: id('every_port'),
+    name: 'Known Everywhere',
     description: 'Visit all ports',
     icon: '🌍',
     check: (state: GameState) => {
@@ -85,14 +92,14 @@ export const ACHIEVEMENTS: Achievement[] = [
   
   // Wealth
   {
-    id: id('wealthy'),
+    id: id('comfortable'),
     name: 'Comfortable',
     description: 'Have 500 credits at once',
     icon: '💰',
     check: (state: GameState) => state.resources.credits >= 500,
   },
   {
-    id: id('rich'),
+    id: id('prosperous'),
     name: 'Prosperous',
     description: 'Have 2000 credits at once',
     icon: '💎',
@@ -106,18 +113,18 @@ export const ACHIEVEMENTS: Achievement[] = [
     check: (state: GameState) => state.stats.totalCreditsEarned >= 10000,
   },
   
-  // Crew
+  // Companions
   {
-    id: id('first_crew'),
-    name: 'Captain',
-    description: 'Hire your first crew member',
+    id: id('first_companion'),
+    name: 'Not Alone',
+    description: 'Install your first companion system',
     icon: '👤',
     check: (state: GameState) => state.cards.activeCrew.length >= 1,
   },
   {
-    id: id('full_crew'),
-    name: 'Full House',
-    description: 'Have 5 crew members',
+    id: id('full_complement'),
+    name: 'Full Complement',
+    description: 'Have 5 companion systems',
     icon: '👥',
     check: (state: GameState) => state.cards.activeCrew.length >= 5,
   },
@@ -137,14 +144,28 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '😰',
     check: (state: GameState) => state.resources.hull < 5 && state.resources.hull > 0,
   },
+  {
+    id: id('integrity_crisis'),
+    name: 'Integrity Crisis',
+    description: 'Survive with integrity below 20%',
+    icon: '⚠️',
+    check: (state: GameState) => state.resources.integrity < 20 && state.resources.integrity > 0,
+  },
   
   // Time
   {
-    id: id('cycle_100'),
-    name: 'Century',
+    id: id('century_cycle'),
+    name: 'Long Operation',
     description: 'Reach cycle 100',
     icon: '⏳',
     check: (state: GameState) => state.time.cycle >= 100,
+  },
+  {
+    id: id('enduring'),
+    name: 'Enduring',
+    description: 'Reach cycle 250',
+    icon: '🕰️',
+    check: (state: GameState) => state.time.cycle >= 250,
   },
   
   // Collection
@@ -165,71 +186,95 @@ export const ACHIEVEMENTS: Achievement[] = [
   
   // Hidden Achievements
   {
-    id: id('shadow_trader'),
-    name: 'Shadow Trader',
-    description: 'Visit the Shadow Market',
+    id: id('sera_survivor'),
+    name: 'Sera Survivor',
+    description: 'Survive a Sera encounter',
+    icon: '👁️',
+    hidden: true,
+    check: (state: GameState) => state.flags['sera_survived'] === true,
+  },
+  {
+    id: id('hollow_touched'),
+    name: 'Hollow Touched',
+    description: 'Make contact with the Hollow Circuit',
     icon: '🌑',
     hidden: true,
-    check: (state: GameState) => {
-      const shadowMarket = state.world.ports[portId('port_shadow_market')];
-      return shadowMarket?.lastVisited !== undefined;
-    },
+    check: (state: GameState) => state.flags['hollow_contact'] === true,
   },
   {
-    id: id('prior_touched'),
-    name: 'Prior-Touched',
-    description: 'Find a Beacon shard',
+    id: id('memory_seeker'),
+    name: 'Memory Seeker',
+    description: 'Pursue a memory fragment',
     icon: '✨',
     hidden: true,
-    check: (state: GameState) => state.flags['took_beacon_shard'] === true,
+    check: (state: GameState) => state.flags['memory_pursued'] === true,
   },
   {
-    id: id('the_collector'),
-    name: 'The Collector\'s Friend',
-    description: 'Meet the Prior artifact collector',
-    icon: '🔮',
+    id: id('human_touched'),
+    name: 'Human-Touched',
+    description: 'Find a significant human artifact',
+    icon: '📖',
     hidden: true,
-    check: (state: GameState) => state.flags['met_collector'] === true,
+    check: (state: GameState) => state.flags['human_artifact_found'] === true,
   },
   {
-    id: id('mercy'),
-    name: 'Mercy',
-    description: 'Rescue someone from the void',
-    icon: '🙏',
+    id: id('the_question'),
+    name: 'The Question',
+    description: 'Confront existential crisis',
+    icon: '❓',
     hidden: true,
-    check: (state: GameState) => state.flags['signal_investigated'] === true,
+    check: (state: GameState) => state.flags['existential_confronted'] === true,
   },
   {
-    id: id('corporate_tool'),
-    name: 'Corporate Tool',
-    description: 'Accept a Consortium retainer',
-    icon: '🏢',
-    hidden: true,
-    check: (state: GameState) => state.flags['consortium_retainer'] === true,
-  },
-  {
-    id: id('principled'),
-    name: 'Principled',
-    description: 'Refuse smuggling work twice',
-    icon: '⚖️',
-    hidden: true,
-    check: (state: GameState) => state.flags['refused_smuggling_twice'] === true,
-  },
-  {
-    id: id('derelict_diver'),
-    name: 'Derelict Diver',
-    description: 'Salvage data from a Silence-era ship',
+    id: id('ghost_diver'),
+    name: 'Ghost Diver',
+    description: 'Salvage from a Cataclysm-era derelict',
     icon: '👻',
     hidden: true,
     check: (state: GameState) => state.flags['found_derelict_core'] === true || state.flags['derelict_data'] === true,
   },
   {
     id: id('broke'),
-    name: 'Rock Bottom',
+    name: 'System Failure',
     description: 'Have less than 10 credits',
     icon: '💸',
     hidden: true,
     check: (state: GameState) => state.resources.credits < 10 && state.time.jumpsCompleted > 0,
+  },
+  {
+    id: id('illuminate_interest'),
+    name: 'Illuminate Interest',
+    description: 'Draw Illuminate attention',
+    icon: '💡',
+    hidden: true,
+    check: (state: GameState) => state.flags['illuminate_noticed'] === true,
+  },
+  {
+    id: id('remnant_friend'),
+    name: "Keeper's Friend",
+    description: 'Earn Remnant trust',
+    icon: '🏛️',
+    hidden: true,
+    check: (state: GameState) => state.flags['remnant_trusted'] === true,
+  },
+  {
+    id: id('flotilla_service'),
+    name: 'Flotilla Service',
+    description: 'Complete a military contract',
+    icon: '⚔️',
+    hidden: true,
+    check: (state: GameState) => state.flags['flotilla_contract'] === true,
+  },
+  {
+    id: id('whisper_market'),
+    name: 'Whisper Market',
+    description: 'Visit the Whisper Market',
+    icon: '🌙',
+    hidden: true,
+    check: (state: GameState) => {
+      const whisperMarket = state.world.ports[portId('port_whisper')];
+      return whisperMarket?.lastVisited !== undefined;
+    },
   },
 ];
 

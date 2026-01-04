@@ -1,0 +1,53 @@
+---
+id: journey_debris_field
+title: Navigation Hazard
+tags: [danger, environment]
+context: journey
+weight: 12
+cooldown: 4
+---
+
+=== intro
+
+Proximity warnings cascade through your sensors. A debris field—dense, chaotic, 
+spanning the approach vector. Fragments of rock, metal, and ice tumbling in slow 
+orbit around nothing at all.
+
+Going through will be faster. Going around will be safer.
+
+* [Navigate carefully through the field]
+  ~ fuel -= 3
+  -> careful
+
+* [Push through at speed]
+  -> fast
+
+* [Plot a course around]
+  ~ fuel -= 8
+  ~ chronicle "Debris Field"
+    Detected dense debris field on approach vector. Chose the long way around.
+  -> END
+
+=== careful
+
+You throttle back and let your sensors lead. The Blackwing threads between tumbling 
+fragments, adjusting vector by millimeters. It's delicate work. Time-consuming.
+
+But you emerge intact.
+
+* [Continue the journey]
+  ~ chronicle "Debris Field"
+    Navigated through a dense debris field. Careful work, but successful.
+  -> END
+
+=== fast
+
+Full burn. The debris becomes a blur of proximity warnings. Something strikes your 
+hull—a glancing blow, then another. You're through before you can fully assess 
+the damage.
+
+* [Assess the damage]
+  ~ damage hull 12
+  ~ chronicle "Debris Field"
+    Pushed through a debris field at speed. The hull took hits.
+  -> END

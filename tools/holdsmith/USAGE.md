@@ -1,6 +1,6 @@
 # Holdsmith Usage Guide
 
-Holdsmith is a DSL (Domain-Specific Language) toolkit for authoring narrative scenes. It compiles `.scene` files into TypeScript code compatible with Cargo Hold's `Scenelet` type system.
+Holdsmith is a DSL (Domain-Specific Language) toolkit for authoring narrative scenes. It compiles `.scene` files into TypeScript code compatible with Blackwing's `Scenelet` type system.
 
 ## Quick Start
 
@@ -29,7 +29,7 @@ Scene files use a YAML frontmatter + Ink-inspired body syntax.
 ---
 id: journey_strange_signal
 title: Signal in the Dark
-tags: [mystery, discovery, prior]
+tags: [mystery, discovery, cataclysm]
 context: journey
 weight: 10
 cooldown: 5
@@ -42,7 +42,7 @@ requires:
 === intro
 
 The sensor array chirps—an anomaly in the void. A signal, repeating in patterns 
-that feel almost like language. Old. Pre-Silence old.
+that feel almost like language. Old. Pre-Cataclysm old.
 
 It's coming from somewhere off your plotted course.
 
@@ -68,11 +68,11 @@ You find a derelict, drifting in the void. In the cargo bay, a data core glows.
   ~ addCard cargo_memory_cores
   ~ flag found_derelict_core
   ~ chronicle "The Derelict's Secret"
-    Salvaged a memory core from a Silence-era derelict.
+    Salvaged a memory core from a Cataclysm-era derelict.
   -> END
 
 * [Leave them undisturbed]
-  ~ morale += 5
+  ~ integrity += 5
   -> END
 ```
 
@@ -96,7 +96,7 @@ requires:                    # Optional. Conditions for scene to appear.
     credits: 50
     fuel: 20
   maxResources:
-    morale: 60
+    integrity: 60
   requiredFlags: [met_collector]
   excludedFlags: [refused_twice]
 ---
@@ -116,11 +116,13 @@ The five resources that can be checked or modified:
 
 | Resource | Description |
 |----------|-------------|
-| `credits` | Currency |
-| `fuel` | Travel capacity |
-| `supplies` | Crew sustenance |
-| `hull` | Ship integrity (0 = game over) |
-| `morale` | Crew mental state (0 = game over) |
+| `credits` | Currency (Standard Compact Credits) |
+| `fuel` | Antimatter cells for FTL and systems |
+| `supplies` | Maintenance materials, spare parts, processing reserves |
+| `hull` | Ship integrity (0 = destruction) |
+| `integrity` | System coherence / psychological stability (0 = rampancy spiral) |
+
+**Note**: In Blackwing, "integrity" replaces "morale" - it represents artilect psychological stability, not crew mental state.
 
 ## Passage Syntax
 
@@ -201,7 +203,7 @@ Effects modify game state. They start with `~` and must be indented under a choi
 ```
 ~ credits += 50      # Add 50 credits
 ~ fuel -= 10         # Subtract 10 fuel
-~ morale = 75        # Set morale to exactly 75
+~ integrity = 75     # Set integrity to exactly 75
 ~ hull += 20         # Repair 20 hull
 ~ supplies -= 5      # Consume 5 supplies
 ```
@@ -242,7 +244,7 @@ Single-line version:
 
 ```
 ~ damage hull 10       # Deal 10 hull damage
-~ damage morale 5      # Deal 5 morale damage
+~ damage integrity 5   # Deal 5 integrity damage (psychological strain)
 ```
 
 Note: Damage is different from resource subtraction. It may trigger special game logic.
@@ -453,14 +455,14 @@ src/content/scenelets/
 3. **No conditional effects**: Effects always apply; use separate choices for branching
 4. **No variables/interpolation**: Prose text is static, can't embed `{player_name}`
 
-### Cargo Hold-Specific
+### Blackwing-Specific
 
-This version of Holdsmith is tailored to Cargo Hold's type system:
+This version of Holdsmith is tailored to Blackwing's type system:
 
-- Resources: `credits`, `fuel`, `supplies`, `hull`, `morale`
+- Resources: `credits`, `fuel`, `supplies`, `hull`, `integrity`
 - Tag sources: `crew`, `ship`, `cargo`
 - Contexts: `journey`, `port`, `any`
-- Damage targets: `hull`, `morale`
+- Damage targets: `hull`, `integrity`
 
 For other games, fork and modify the hardcoded values in `ast.ts`, `parser.ts`, and `compiler.ts`.
 

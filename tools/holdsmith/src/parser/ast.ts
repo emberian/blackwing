@@ -71,7 +71,7 @@ export interface Requirements extends ASTNode {
 }
 
 export interface ResourceCheck {
-  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale';
+  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale' | 'integrity';
   readonly value: number;
 }
 
@@ -143,10 +143,9 @@ export interface TagCondition extends ASTNode {
   readonly tag: string;
 }
 
-/** Check resource value */
 export interface ResourceCondition extends ASTNode {
   readonly type: 'ResourceCondition';
-  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale';
+  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale' | 'integrity';
   readonly operator: '>=' | '<=' | '>' | '<' | '==' | '!=';
   readonly value: number;
 }
@@ -173,10 +172,9 @@ export type Effect =
   | DamageEffect
   | ReputationEffect;
 
-/** Modify a resource */
 export interface ResourceEffect extends ASTNode {
   readonly type: 'ResourceEffect';
-  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale';
+  readonly resource: 'credits' | 'fuel' | 'supplies' | 'hull' | 'morale' | 'integrity';
   readonly operator: '+=' | '-=' | '=';
   readonly value: number;
 }
@@ -201,10 +199,9 @@ export interface ChronicleEffect extends ASTNode {
   readonly text: string;
 }
 
-/** Apply damage */
 export interface DamageEffect extends ASTNode {
   readonly type: 'DamageEffect';
-  readonly target: 'hull' | 'morale';
+  readonly target: 'hull' | 'morale' | 'integrity';
   readonly value: number;
 }
 

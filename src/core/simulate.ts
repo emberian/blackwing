@@ -62,9 +62,9 @@ export function processJourneyWear(
   const newSupplies = Math.max(0, state.resources.supplies - supplyCost);
   const starving = newSupplies === 0 && state.resources.supplies > 0;
   
-  let newMorale = state.resources.morale;
+  let newIntegrity = state.resources.integrity;
   if (starving) {
-    newMorale = Math.max(0, newMorale - 15);
+    newIntegrity = Math.max(0, newIntegrity - 15);
   }
   
   const newHull = Math.max(0, state.resources.hull - config.journeyHullWear);
@@ -75,7 +75,7 @@ export function processJourneyWear(
       ...state.resources,
       supplies: newSupplies,
       hull: newHull,
-      morale: newMorale,
+      integrity: newIntegrity,
     },
   };
 }
@@ -150,7 +150,7 @@ export function tickContractTimers(
       resources = {
         ...resources,
         credits: Math.max(0, resources.credits - (penalty.credits ?? 0)),
-        morale: Math.max(0, resources.morale - (penalty.morale ?? 10)),
+        integrity: Math.max(0, resources.integrity - (penalty.integrity ?? 10)),
       };
       stats = {
         ...stats,

@@ -440,7 +440,7 @@ export function createGameController(
   }
 
   function isGameOver(): boolean {
-    return state.resources.hull <= 0 || state.resources.morale <= 0;
+    return state.resources.hull <= 0 || state.resources.integrity <= 0;
   }
 
   return {

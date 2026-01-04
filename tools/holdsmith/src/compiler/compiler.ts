@@ -33,6 +33,7 @@ export interface CompiledResources {
   supplies: number;
   hull: number;
   morale: number;
+  integrity: number;
 }
 
 export interface CompiledPassage {
@@ -52,7 +53,7 @@ export interface CompiledEffects {
   readonly addCards?: readonly string[] | undefined;
   readonly setFlags?: Record<string, boolean | number | string> | undefined;
   readonly addChronicle?: { title: string; text: string } | undefined;
-  readonly damage?: { hull?: number; morale?: number } | undefined;
+  readonly damage?: { hull?: number; morale?: number; integrity?: number } | undefined;
   readonly reputation?: { faction: string; amount: number } | undefined;
 }
 
@@ -241,7 +242,7 @@ function compileEffects(effects: Effect[]): CompiledEffects {
   const resources: Partial<CompiledResources> = {};
   const addCards: string[] = [];
   const setFlags: Record<string, boolean | number | string> = {};
-  let damage: { hull?: number; morale?: number } | undefined;
+  let damage: { hull?: number; morale?: number; integrity?: number } | undefined;
   
   for (const effect of effects) {
     switch (effect.type) {
@@ -288,7 +289,7 @@ function compileEffects(effects: Effect[]): CompiledEffects {
     (result as { setFlags: Record<string, boolean | number | string> }).setFlags = setFlags;
   }
   if (damage) {
-    (result as { damage: { hull?: number; morale?: number } }).damage = damage;
+    (result as { damage: { hull?: number; morale?: number; integrity?: number } }).damage = damage;
   }
   
   return result;
@@ -317,16 +318,20 @@ export function emitTypeScript(scenelet: CompiledScenelet, importPath: string = 
   const lines: string[] = [];
   
   const hasCards = hasAddCards(scenelet);
+  const hasReputation = hasReputationEffects(scenelet);
   
-  const types = hasCards 
-    ? 'Scenelet, SceneletId, CardDefId'
-    : 'Scenelet, SceneletId';
+  const typesList = ['Scenelet', 'SceneletId'];
+  if (hasCards) typesList.push('CardDefId');
+  if (hasReputation) typesList.push('FactionId');
   
-  lines.push(`import type { ${types} } from '${importPath}';`);
+  lines.push(`import type { ${typesList.join(', ')} } from '${importPath}';`);
   lines.push('');
   lines.push('const id = (s: string): SceneletId => s as SceneletId;');
   if (hasCards) {
     lines.push('const cardId = (s: string): CardDefId => s as CardDefId;');
+  }
+  if (hasReputation) {
+    lines.push('const factionId = (s: string): FactionId => s as FactionId;');
   }
   lines.push('');
   lines.push(`export const ${sanitizeIdentifier(scenelet.id)}: Scenelet = ${jsonToTypeScript(scenelet, 0, {})};`);
@@ -350,6 +355,22 @@ function hasAddCards(obj: unknown): boolean {
   return Object.values(record).some(value => hasAddCards(value));
 }
 
+function hasReputationEffects(obj: unknown): boolean {
+  if (obj === null || obj === undefined) return false;
+  if (typeof obj !== 'object') return false;
+  
+  if (Array.isArray(obj)) {
+    return obj.some(item => hasReputationEffects(item));
+  }
+  
+  const record = obj as Record<string, unknown>;
+  if ('reputation' in record && record.reputation !== undefined) {
+    return true;
+  }
+  
+  return Object.values(record).some(value => hasReputationEffects(value));
+}
+
 function sanitizeIdentifier(id: string): string {
   return id.replace(/[^a-zA-Z0-9_]/g, '_');
 }
@@ -357,6 +378,7 @@ function sanitizeIdentifier(id: string): string {
 interface JsonContext {
   inIdField?: boolean;
   inAddCards?: boolean;
+  inFactionField?: boolean;
 }
 
 function jsonToTypeScript(obj: unknown, indent: number = 0, ctx: JsonContext = {}): string {
@@ -373,6 +395,9 @@ function jsonToTypeScript(obj: unknown, indent: number = 0, ctx: JsonContext = {
     }
     if (ctx.inAddCards) {
       return `cardId(${JSON.stringify(obj)})`;
+    }
+    if (ctx.inFactionField) {
+      return `factionId(${JSON.stringify(obj)})`;
     }
     if (obj.includes('\n')) {
       return '`' + obj.replace(/`/g, '\\`').replace(/\$/g, '\\$') + '`';
@@ -408,6 +433,9 @@ function jsonToTypeScript(obj: unknown, indent: number = 0, ctx: JsonContext = {
       }
       if (key === 'addCards') {
         newCtx.inAddCards = true;
+      }
+      if (key === 'faction' && typeof value === 'string') {
+        newCtx.inFactionField = true;
       }
       return `${safeKey}: ${jsonToTypeScript(value, indent + 1, newCtx)}`;
     });

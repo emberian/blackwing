@@ -1,0 +1,81 @@
+---
+id: journey_distress_call
+title: Distress Beacon
+tags: [moral, interaction]
+context: journey
+weight: 10
+cooldown: 4
+---
+
+=== intro
+
+A distress beacon cuts through the void noise—an artilect in trouble. 
+The signal carries basic diagnostics: hull breach, drive failure, 
+life support... well, that's a human-era holdover. Processing reserves 
+nominal, but for how long?
+
+The beacon is close. You could reach it without much fuel expenditure.
+
+But distress signals aren't always what they seem.
+
+* [Respond to the distress call]
+  ~ fuel -= 4
+  -> respond
+
+* [Investigate cautiously first]
+  ~ fuel -= 2
+  -> cautious
+
+* [Continue on your course]
+  ~ damage integrity 3
+  ~ chronicle "Ignored Distress"
+    Detected a distress beacon. Chose not to respond.
+  -> END
+
+=== cautious
+
+Long-range scans show a single vessel, drifting. No other contacts. 
+No hidden ships, no suspicious energy signatures. Just one artilect, 
+alone and dying.
+
+* [Move in to help]
+  ~ fuel -= 2
+  -> respond
+
+* [Still too risky]
+  ~ damage integrity 3
+  ~ chronicle "Ignored Distress"
+    Detected a distress beacon. Scans showed a legitimate emergency. Still chose not to respond.
+  -> END
+
+=== respond
+
+You find a small courier—older model, badly damaged. The artilect aboard 
+is running on backup power, core functions degraded.
+
+"Wasn't sure anyone would come," they transmit. Weak signal. Fading. 
+"Pirates. Took what they wanted. Left me to drift."
+
+They won't survive without help.
+
+* [Share supplies to stabilize them]
+  ~ supplies -= 8
+  ~ integrity += 8
+  ~ flag rescued_artilect
+  ~ chronicle "Void Rescue"
+    Responded to a distress beacon. Stabilized a damaged artilect with shared supplies.
+  -> END
+
+* [Take them aboard if possible]
+  ~ supplies -= 5
+  ~ addCard companion_repair_drones
+  ~ flag rescued_artilect
+  ~ chronicle "Void Rescue"
+    Responded to a distress beacon. Took the damaged artilect aboard for transport to port.
+  -> END
+
+* [There's nothing you can do]
+  ~ damage integrity 5
+  ~ chronicle "Failed Rescue"
+    Responded to a distress beacon. The damage was too severe. Nothing could be done.
+  -> END

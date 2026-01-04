@@ -1,0 +1,114 @@
+---
+id: port_gambling
+title: The Pit
+tags: [opportunity, risk]
+context: port
+weight: 7
+cooldown: 4
+---
+
+=== intro
+
+The Pit: a combat simulation arena where artilects wager on 
+themselves and each other. Not real combat—simulated, consequence-
+free except for credits won or lost.
+
+A match is forming. The stakes are modest. The crowd is 
+enthusiastic.
+
+* [Watch for a while]
+  -> watch
+
+* [Enter the competition] { credits >= 50 }
+  -> enter
+
+* [Not interested]
+  ~ chronicle "The Pit"
+    Visited The Pit. Left without participating.
+  -> END
+
+=== watch
+
+The combatants circle each other in the simulation space—two 
+hauler-class artilects, not built for fighting, but the 
+competition isn't about winning. It's about entertainment. 
+Community. Something to break the routine.
+
+The crowd cheers. Credits change hands. Someone offers you 
+a bet.
+
+* [Place a bet on the underdog]
+  ~ credits -= 30
+  -> bet_underdog
+
+* [Place a bet on the favorite]
+  ~ credits -= 30
+  -> bet_favorite
+
+* [Leave]
+  ~ chronicle "The Pit"
+    Watched a match at The Pit. Didn't wager.
+  -> END
+
+=== bet_underdog
+
+The underdog fights dirty—unexpected maneuvers, unconventional 
+tactics. It's not enough to win, but it's close. Closer than 
+anyone expected.
+
+You lose your bet. The crowd roars anyway.
+
+* [Accept the loss]
+  ~ chronicle "The Pit"
+    Lost a bet at The Pit. The underdog put up a good fight.
+  -> END
+
+=== bet_favorite
+
+The favorite wins, but not easily. Your bet pays out—modest 
+returns, but satisfying.
+
+* [Collect your winnings]
+  ~ credits += 45
+  ~ chronicle "The Pit"
+    Won a bet at The Pit. Modest returns.
+  -> END
+
+=== enter
+
+You upload to the simulation space—a simplified combat 
+environment, you versus an opponent selected at random.
+
+Your opponent is a courier-class, fast and light. You're 
+bigger, slower, but tougher.
+
+* [Fight defensively]
+  -> fight_defensive
+
+* [Fight aggressively]
+  -> fight_aggressive
+
+=== fight_defensive
+
+You weather the courier's attacks, absorb their speed 
+advantage, wait for an opening. When it comes, you take it.
+
+Not a dominant victory, but a victory. The crowd cheers.
+
+* [Collect your winnings]
+  ~ credits += 80
+  ~ chronicle "The Pit"
+    Fought in The Pit. Defensive strategy paid off.
+  -> END
+
+=== fight_aggressive
+
+You push the offensive, trying to overwhelm the courier 
+before their speed becomes decisive. It almost works.
+
+Almost.
+
+* [Accept defeat]
+  ~ chronicle "The Pit"
+    Fought in The Pit. Aggressive strategy failed.
+  -> END

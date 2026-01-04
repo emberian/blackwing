@@ -1,63 +1,86 @@
 ---
 id: port_desperate_seller
-title: Desperate Offer
+title: Desperate Seller
 tags: [trade, opportunity]
 context: port
-weight: 14
-cooldown: 3
-requires:
-  minResources:
-    credits: 40
+weight: 10
+cooldown: 4
 ---
 
 === intro
 
-A figure approaches at the docking bay. Eyes darting. Voice low.
+A message arrives on an open channel—an artilect looking to offload 
+cargo. Fast. Below market value. Way below.
 
-"I have cargo. Good cargo. Need to move it fast—my ship's impounded and I'm leaving on the next shuttle. Half the market rate. No questions."
+"Need to liquidate. Now. No questions. Fair price for fast credits."
 
-They're nervous, but the crates look legitimate.
+The signal is jittery, stressed. Whatever's pushing them, they're 
+not bluffing about the urgency.
 
-* [Accept the deal]
-  ~ credits -= 25
-  ~ addCard cargo_processed_metals
-  ~ addCard cargo_processed_metals
-  ~ chronicle "Opportunistic Purchase"
-    Acquired cargo at well below market rate. The seller's desperation was our opportunity.
+* [Meet with them]
+  -> meet
+
+* [Ask what the cargo is first]
+  -> ask
+
+* [Ignore the message]
+  ~ chronicle "Desperate Seller"
+    Received a liquidation offer. Declined to investigate.
   -> END
 
-* [Ask what they're running from]
-  -> backstory
+=== ask
 
-* [Decline—too risky]
-  ~ chronicle "Caution Prevails"
-    Turned down a suspicious deal. Better safe than sorry.
+"Refined metals. Clean provenance. You can verify."
+
+They transmit shipping records, authenticity seals. Everything 
+looks legitimate. The question isn't whether the cargo is real—
+it's why they're so desperate to dump it.
+
+* [Meet with them]
+  -> meet
+
+* [Still not interested]
+  ~ chronicle "Desperate Seller"
+    Received a liquidation offer. Cargo was clean. Still passed.
   -> END
 
-=== backstory
+=== meet
 
-Their composure cracks. "Debt collectors. Consortium-backed. The kind that take fingers."
+You find them in a service corridor—a small transport artilect, 
+drives running hot even at dock. They're ready to bolt.
 
-A glance over their shoulder. "Please. I just need to be gone."
+"Twenty units refined metals. Market value's about two hundred. 
+I'll take one hundred. Cash. Now."
 
-* [Buy the cargo and offer passage]
-  ~ credits -= 25
-  ~ supplies -= 3
-  ~ morale += 5
-  ~ addCard cargo_processed_metals
-  ~ addCard cargo_processed_metals
-  ~ addCard crew_stowaway
-  ~ chronicle "Mercy in the Margins"
-    Helped someone escape their debts. Another soul joins the hold. The Consortium won't be pleased.
+* [Pay the hundred]
+  ~ credits -= 100
+  ~ addCard cargo_refined_metals
+  ~ addCard cargo_refined_metals
+  ~ chronicle "Desperate Seller"
+    Bought cargo from a desperate seller. Good deal, no questions asked.
   -> END
 
-* [Just buy the cargo]
-  ~ credits -= 25
-  ~ addCard cargo_processed_metals
-  ~ addCard cargo_processed_metals
-  ~ chronicle "Business Only"
-    Took the deal. Left the seller to their fate. Credits don't have memories.
+* [Offer eighty]
+  -> negotiate
+
+* [This feels wrong. Pass.]
+  ~ chronicle "Desperate Seller"
+    Met a desperate seller. Decided against the deal.
   -> END
 
-* [Walk away]
+=== negotiate
+
+"Eighty," you transmit.
+
+They hesitate. Every second of that hesitation tells you how bad 
+their situation is.
+
+"Fine. Eighty. Just transfer and take it."
+
+* [Complete the transaction]
+  ~ credits -= 80
+  ~ addCard cargo_refined_metals
+  ~ addCard cargo_refined_metals
+  ~ chronicle "Desperate Seller"
+    Negotiated a desperate seller down. Good deal, some guilt.
   -> END

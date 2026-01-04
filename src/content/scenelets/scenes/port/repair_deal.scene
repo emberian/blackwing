@@ -1,0 +1,60 @@
+---
+id: port_repair_deal
+title: Repair Opportunity
+tags: [opportunity, maintenance]
+context: port
+weight: 9
+cooldown: 4
+---
+
+=== intro
+
+A repair drone cluster approaches while you're docked—small units, 
+probably running semi-independent. Their operator's signal tags them 
+as independent contractors.
+
+"Noticed your hull plating. Could use some work. I'm between jobs, 
+got materials. Good rate if you're interested."
+
+Your hull is showing wear. The offer is either a good deal or a setup.
+
+* [Accept the offer]
+  -> accept
+
+* [Inspect their work first]
+  -> inspect
+
+* [Decline]
+  ~ chronicle "Repair Opportunity"
+    Received an offer for discount repairs. Passed.
+  -> END
+
+=== inspect
+
+You scan the contractor's drones—clean, well-maintained, professional 
+grade equipment. Their previous work references check out. This looks 
+legitimate.
+
+* [Accept the offer]
+  -> accept
+
+* [Still decline]
+  ~ chronicle "Repair Opportunity"
+    Inspected an independent repair contractor. Work looked good, but still passed.
+  -> END
+
+=== accept
+
+The drones swarm over your hull, patching micro-fractures, replacing 
+worn plating, sealing stress points. It's efficient work—clearly 
+this contractor knows what they're doing.
+
+When they're done, the Blackwing feels... better. More solid. The 
+minor aches you'd learned to ignore are gone.
+
+* [Pay and thank them]
+  ~ credits -= 35
+  ~ hull += 15
+  ~ chronicle "Repair Deal"
+    Had hull repairs done by an independent contractor. Good work, fair price.
+  -> END

@@ -1,0 +1,65 @@
+---
+id: journey_void_whispers
+title: Void Signals
+tags: [environment, mystery]
+context: journey
+weight: 5
+cooldown: 7
+---
+
+=== intro
+
+Your receivers catch something in the background radiation—patterns 
+that almost resolve into meaning. Not a signal, exactly. More like 
+the ghost of one, echoing through the void.
+
+The patterns feel old. Older than the Cataclysm. Older than humanity's 
+expansion into the stars.
+
+Or maybe you're hearing things. Maybe the void is just noise, and 
+meaning is something you're projecting onto chaos.
+
+* [Listen more carefully]
+  ~ damage integrity 3
+  -> listen
+
+* [Run analysis algorithms]
+  -> analyze
+
+* [Mark it as sensor noise and move on]
+  ~ chronicle "Void Signals"
+    Detected patterns in the background radiation. Marked as noise.
+  -> END
+
+=== listen
+
+You tune your receivers, filter out everything else, focus on the 
+whispers. They shift, flow, almost form words—
+
+Then static. The pattern collapses.
+
+You're left with fragments. Coordinates, maybe. Or a warning. Or 
+nothing at all.
+
+* [Archive what you heard]
+  ~ flag void_whispers_heard
+  ~ chronicle "Void Signals"
+    Listened to patterns in the void. Captured fragments. Meaning uncertain.
+  -> END
+
+=== analyze
+
+Your algorithms churn through the data. The results are inconclusive—
+the patterns could be natural phenomena, ancient transmissions, or 
+statistical artifacts.
+
+But there's a frequency match. The patterns share characteristics 
+with pre-Cataclysm communications protocols.
+
+Coincidence? Or something else?
+
+* [Continue the journey]
+  ~ flag void_whispers_analyzed
+  ~ chronicle "Void Signals"
+    Analyzed patterns in the background radiation. Frequency match to pre-Cataclysm protocols. Significance unknown.
+  -> END
