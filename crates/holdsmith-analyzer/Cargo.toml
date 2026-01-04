@@ -6,8 +6,10 @@ edition.workspace = true
 [dependencies]
 engine-core = { path = "../engine-core" }
 engine-runtime = { path = "../engine-runtime" }
+engine-script = { path = "../engine-script" }
 holdsmith-parser = { path = "../holdsmith-parser" }
 holdsmith-compiler = { path = "../holdsmith-compiler" }
 z3 = { workspace = true }
 rayon = { workspace = true }
 thiserror = { workspace = true }
+smol_str = { workspace = true }

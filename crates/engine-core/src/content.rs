@@ -2,11 +2,12 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
-use crate::{
-    CardId, ContextId, Effect, FactionId, LocationId, Requirement, ResourceId, SceneId, SlotId,
-    Tags,
-};
+use crate::{CardId, ContextId, FactionId, LocationId, ResourceId, SceneId, SlotId, Tags};
 
+/// A scene (event/scenelet) in the game.
+///
+/// All conditions and effects are expressed as Rhai scripts.
+/// The DSL syntax is pure sugar that compiles to Rhai.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Scene {
     pub id: SceneId,
@@ -15,12 +16,10 @@ pub struct Scene {
     pub context: Option<ContextId>,
     pub weight: u32,
     pub cooldown: u64,
-    pub requirements: Requirement,
     pub passages: Vec<Passage>,
-    /// Rhai source for scene requirements (generated from DSL).
-    /// When present, this is the canonical requirement - `requirements` is derived from it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rhai_requirements: Option<SmolStr>,
+    /// Rhai script for scene requirements. Empty string means always available.
+    #[serde(default)]
+    pub rhai_requirements: SmolStr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -33,20 +32,19 @@ pub struct Passage {
     pub rhai_on_enter: Option<SmolStr>,
 }
 
+/// A choice within a passage.
+///
+/// Conditions and effects are Rhai scripts. Empty string means no condition/no effects.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Choice {
     pub text: SmolStr,
-    pub requirements: Requirement,
-    pub effects: Vec<Effect>,
     pub next: Navigation,
-    /// Rhai source for the condition (generated from DSL conditions).
-    /// When present, this is the canonical condition - `requirements` is derived from it.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rhai_condition: Option<SmolStr>,
-    /// Rhai source for the effects (generated from DSL effects).
-    /// When present, this is the canonical effects - `effects` may be empty or derived.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rhai_effects: Option<SmolStr>,
+    /// Rhai script for the condition. Empty string means always available.
+    #[serde(default)]
+    pub rhai_condition: SmolStr,
+    /// Rhai script for effects. Empty string means no effects.
+    #[serde(default)]
+    pub rhai_effects: SmolStr,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -181,17 +179,6 @@ impl Scene {
 }
 
 impl Passage {
-    pub fn available_choices<'a>(
-        &'a self,
-        state: &crate::GameState,
-        tags: &impl crate::TagProvider,
-    ) -> impl Iterator<Item = (usize, &'a Choice)> {
-        self.choices
-            .iter()
-            .enumerate()
-            .filter(|(_, c)| c.requirements.check(state, tags))
-    }
-
     pub fn is_terminal(&self) -> bool {
         self.choices.is_empty()
     }

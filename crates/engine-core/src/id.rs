@@ -81,6 +81,12 @@ macro_rules! impl_id {
 impl_id!(ResourceId);
 impl_id!(TagId);
 impl_id!(TagCategoryId);
+
+/// Trait for objects that can provide tag information.
+/// Used by script execution to check for tags on ships, crew, cargo, etc.
+pub trait TagProvider {
+    fn has_tag(&self, category: &TagCategoryId, tag: &TagId) -> bool;
+}
 impl_id!(CardTypeId);
 impl_id!(CardId);
 impl_id!(CardInstanceId);

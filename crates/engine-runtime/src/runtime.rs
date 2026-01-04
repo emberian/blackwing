@@ -128,7 +128,7 @@ impl<'a> Runtime<'a> {
         }
 
         // Consume fuel
-        let mut events = vec![Event::resource_changed(
+        let events = vec![Event::resource_changed(
             fuel_id,
             current_fuel,
             current_fuel - fuel_cost,

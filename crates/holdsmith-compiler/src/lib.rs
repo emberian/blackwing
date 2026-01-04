@@ -6,7 +6,7 @@ mod validator;
 pub use codegen::{generate_choice_script, generate_condition, generate_effects};
 pub use compiler::{compile, Compiler};
 pub use error::{CompileError, CompileResult, ValidationError, ValidationReport, ValidationWarning};
-pub use validator::{validate, validate_with_cards, Validator};
+pub use validator::{validate, Validator};
 
 use engine_core::{GameSchema, Scene};
 

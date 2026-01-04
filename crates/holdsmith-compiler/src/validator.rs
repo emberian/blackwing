@@ -1,25 +1,16 @@
 use std::collections::HashSet;
 
-use engine_core::{ContentRegistry, Effect, GameSchema, Navigation, Requirement, Scene};
+use engine_core::{GameSchema, Navigation, Scene};
 
 use crate::error::{ValidationError, ValidationReport, ValidationWarning};
 
 pub struct Validator<'a> {
     schema: &'a GameSchema,
-    cards: Option<&'a dyn ContentRegistry>,
 }
 
 impl<'a> Validator<'a> {
     pub fn new(schema: &'a GameSchema) -> Self {
-        Self {
-            schema,
-            cards: None,
-        }
-    }
-
-    pub fn with_cards(mut self, registry: &'a dyn ContentRegistry) -> Self {
-        self.cards = Some(registry);
-        self
+        Self { schema }
     }
 
     pub fn validate(&self, scene: &Scene) -> ValidationReport {
@@ -27,7 +18,6 @@ impl<'a> Validator<'a> {
         let scene_id = scene.id.as_str();
 
         self.validate_context(scene, &mut report);
-        self.validate_requirements(&scene.requirements, scene_id, &mut report);
 
         let mut reachable_passages = HashSet::new();
         self.find_reachable_passages(scene, 0, &mut reachable_passages);
@@ -46,14 +36,6 @@ impl<'a> Validator<'a> {
                     scene_id: scene_id.to_string(),
                 });
             }
-
-            for choice in &passage.choices {
-                self.validate_requirements(&choice.requirements, scene_id, &mut report);
-
-                for effect in &choice.effects {
-                    self.validate_effect(effect, scene_id, &mut report);
-                }
-            }
         }
 
         report
@@ -67,113 +49,6 @@ impl<'a> Validator<'a> {
                     scene_id: scene.id.to_string(),
                 });
             }
-        }
-    }
-
-    fn validate_requirements(
-        &self,
-        req: &Requirement,
-        scene_id: &str,
-        report: &mut ValidationReport,
-    ) {
-        match req {
-            Requirement::MinResource { resource, .. }
-            | Requirement::MaxResource { resource, .. } => {
-                if self.schema.resource(resource).is_none() {
-                    report.error(ValidationError::UnknownResource {
-                        resource: resource.to_string(),
-                        scene_id: scene_id.to_string(),
-                    });
-                }
-            }
-            Requirement::HasTag { category, tag } => {
-                if !self.schema.is_valid_tag(category, tag) {
-                    report.error(ValidationError::UnknownTag {
-                        tag: tag.to_string(),
-                        category: category.to_string(),
-                        scene_id: scene_id.to_string(),
-                    });
-                }
-            }
-            Requirement::HasCard { card_id } => {
-                if let Some(registry) = self.cards {
-                    if registry.get_card(card_id).is_none() {
-                        report.error(ValidationError::UnknownCard {
-                            card_id: card_id.to_string(),
-                            scene_id: scene_id.to_string(),
-                        });
-                    }
-                }
-            }
-            Requirement::MinFactionReputation { .. }
-            | Requirement::MaxFactionReputation { .. } => {
-                // Factions are not in schema yet, skip validation
-            }
-            Requirement::And(reqs) | Requirement::Or(reqs) => {
-                for r in reqs {
-                    self.validate_requirements(r, scene_id, report);
-                }
-            }
-            Requirement::Not(inner) => {
-                self.validate_requirements(inner, scene_id, report);
-            }
-            Requirement::HasFlag { .. }
-            | Requirement::NotFlag { .. }
-            | Requirement::FlagEquals { .. }
-            | Requirement::FlagCompare { .. }
-            | Requirement::Always
-            | Requirement::Never => {}
-        }
-    }
-
-    fn validate_effect(&self, effect: &Effect, scene_id: &str, report: &mut ValidationReport) {
-        match effect {
-            Effect::ModifyResource { resource, .. } | Effect::SetResource { resource, .. } => {
-                if self.schema.resource(resource).is_none() {
-                    report.error(ValidationError::UnknownResource {
-                        resource: resource.to_string(),
-                        scene_id: scene_id.to_string(),
-                    });
-                }
-            }
-            Effect::Damage { resource, amount } => {
-                if self.schema.resource(resource).is_none() {
-                    report.error(ValidationError::UnknownResource {
-                        resource: resource.to_string(),
-                        scene_id: scene_id.to_string(),
-                    });
-                }
-                if *amount > 50 {
-                    report.warn(ValidationWarning::HighDamageValue {
-                        resource: resource.to_string(),
-                        amount: *amount,
-                        scene_id: scene_id.to_string(),
-                    });
-                }
-            }
-            Effect::AddCard { card_id } => {
-                if let Some(registry) = self.cards {
-                    if registry.get_card(card_id).is_none() {
-                        report.error(ValidationError::UnknownCard {
-                            card_id: card_id.to_string(),
-                            scene_id: scene_id.to_string(),
-                        });
-                    }
-                }
-            }
-            Effect::Compound { effects } => {
-                for e in effects {
-                    self.validate_effect(e, scene_id, report);
-                }
-            }
-            Effect::SetFlag { .. }
-            | Effect::RemoveCards { .. }
-            | Effect::ModifyFactionReputation { .. }
-            | Effect::AddChronicle { .. }
-            | Effect::Script { .. }
-            | Effect::EquipModule { .. }
-            | Effect::UnequipModule { .. }
-            | Effect::ModifyStat { .. } => {}
         }
     }
 
@@ -200,14 +75,6 @@ impl<'a> Validator<'a> {
 
 pub fn validate(scene: &Scene, schema: &GameSchema) -> ValidationReport {
     Validator::new(schema).validate(scene)
-}
-
-pub fn validate_with_cards(
-    scene: &Scene,
-    schema: &GameSchema,
-    cards: &dyn ContentRegistry,
-) -> ValidationReport {
-    Validator::new(schema).with_cards(cards).validate(scene)
 }
 
 #[cfg(test)]
@@ -263,26 +130,17 @@ mod tests {
             context: Some(ContextId::new("journey")),
             weight: 10,
             cooldown: 5,
-            requirements: Requirement::Always,
             passages: vec![Passage {
                 text: "Hello".into(),
                 choices: vec![Choice {
                     text: "Ok".into(),
-                    requirements: Requirement::MinResource {
-                        resource: ResourceId::new("credits"),
-                        value: 10,
-                    },
-                    effects: vec![Effect::ModifyResource {
-                        resource: ResourceId::new("credits"),
-                        delta: -10,
-                    }],
                     next: Navigation::End,
-                    rhai_condition: Some("resource(\"credits\") >= 10".into()),
-                    rhai_effects: Some("modify_resource(\"credits\", -10);".into()),
+                    rhai_condition: "resource(\"credits\") >= 10".into(),
+                    rhai_effects: "modify_resource(\"credits\", -10);".into(),
                 }],
                 rhai_on_enter: None,
             }],
-            rhai_requirements: None,
+            rhai_requirements: Default::default(),
         }
     }
 
@@ -292,23 +150,6 @@ mod tests {
         let scene = make_valid_scene();
         let report = validate(&scene, &schema);
         assert!(report.is_ok());
-    }
-
-    #[test]
-    fn test_unknown_resource_error() {
-        let schema = make_test_schema();
-        let mut scene = make_valid_scene();
-        scene.passages[0].choices[0].effects = vec![Effect::ModifyResource {
-            resource: ResourceId::new("nonexistent"),
-            delta: 10,
-        }];
-
-        let report = validate(&scene, &schema);
-        assert!(!report.is_ok());
-        assert!(report.errors.iter().any(|e| matches!(
-            e,
-            ValidationError::UnknownResource { resource, .. } if resource == "nonexistent"
-        )));
     }
 
     #[test]
@@ -326,29 +167,21 @@ mod tests {
     }
 
     #[test]
-    fn test_unknown_tag_error() {
+    fn test_unreachable_passage_error() {
         let schema = make_test_schema();
         let mut scene = make_valid_scene();
-        scene.passages[0].choices[0].requirements = Requirement::HasTag {
-            category: TagCategoryId::new("ship"),
-            tag: TagId::new("nonexistent_tag"),
-        };
+        // Add an unreachable second passage
+        scene.passages.push(Passage {
+            text: "Unreachable".into(),
+            choices: vec![],
+            rhai_on_enter: None,
+        });
 
         let report = validate(&scene, &schema);
         assert!(!report.is_ok());
-    }
-
-    #[test]
-    fn test_high_damage_warning() {
-        let schema = make_test_schema();
-        let mut scene = make_valid_scene();
-        scene.passages[0].choices[0].effects = vec![Effect::Damage {
-            resource: ResourceId::new("hull"),
-            amount: 100,
-        }];
-
-        let report = validate(&scene, &schema);
-        assert!(report.is_ok()); // warnings don't make it fail
-        assert!(report.has_warnings());
+        assert!(report.errors.iter().any(|e| matches!(
+            e,
+            ValidationError::UnreachablePassage { passage, .. } if passage == "passage_1"
+        )));
     }
 }

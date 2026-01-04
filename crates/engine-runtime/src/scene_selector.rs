@@ -1,4 +1,5 @@
 use engine_core::{ContextId, GameState, Scene, TagProvider};
+use engine_script::ScriptExecutor;
 
 use crate::{ContentRegistry, Rng};
 
@@ -75,8 +76,15 @@ pub fn is_scene_eligible(
         return false;
     }
 
-    // Check requirements
-    scene.requirements.check(state, tags)
+    // Check Rhai requirements (empty string = always eligible)
+    if scene.rhai_requirements.is_empty() {
+        return true;
+    }
+
+    let executor = ScriptExecutor::new();
+    executor
+        .eval_condition(&scene.rhai_requirements, state, tags)
+        .unwrap_or(false) // If script errors, scene is not eligible
 }
 
 /// Get all eligible scenes for the current state (useful for debugging/analysis)

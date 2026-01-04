@@ -327,17 +327,16 @@ impl<'a> CommandHandler<'a> {
 
         let tags = DeckTagProvider::from_state(state, self.registry);
 
-        // Evaluate condition: prefer Rhai if available, fall back to native Requirement
-        let condition_met = if let Some(ref rhai_condition) = choice.rhai_condition {
+        // Evaluate condition via Rhai (empty string = always true)
+        let condition_met = if choice.rhai_condition.is_empty() {
+            true
+        } else {
             let executor = ScriptExecutor::new();
             executor
-                .eval_condition(rhai_condition, state, &tags)
-                .unwrap_or_else(|_| {
-                    // If Rhai evaluation fails, fall back to native check
-                    choice.requirements.check(state, &tags)
-                })
-        } else {
-            choice.requirements.check(state, &tags)
+                .eval_condition(&choice.rhai_condition, state, &tags)
+                .map_err(|e| RuntimeError::ScriptError {
+                    message: e.to_string(),
+                })?
         };
 
         if !condition_met {
@@ -350,12 +349,11 @@ impl<'a> CommandHandler<'a> {
             choice_index,
         }];
 
-        // Execute effects: prefer Rhai if available, fall back to native effects
-        if let Some(ref rhai_effects) = choice.rhai_effects {
-            // Execute Rhai script to collect effects
+        // Execute effects via Rhai (empty string = no effects)
+        if !choice.rhai_effects.is_empty() {
             let executor = ScriptExecutor::new();
             let script_result = executor
-                .eval(rhai_effects, state, &tags, rng.state())
+                .eval(&choice.rhai_effects, state, &tags, rng.state())
                 .map_err(|e| RuntimeError::ScriptError {
                     message: e.to_string(),
                 })?;
@@ -364,11 +362,6 @@ impl<'a> CommandHandler<'a> {
             // Apply the collected effects
             let (effect_events, _conflicts) =
                 self.apply_effects(state, &script_result.effects, "choice", rng)?;
-            events.extend(effect_events);
-        } else {
-            // Use native effects
-            let (effect_events, _conflicts) =
-                self.apply_effects(state, &choice.effects, "choice", rng)?;
             events.extend(effect_events);
         }
 
