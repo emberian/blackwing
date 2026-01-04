@@ -1,0 +1,150 @@
+import type { Scenelet, SceneletId } from '../../../../core/types.js';
+
+const id = (s: string): SceneletId => s as SceneletId;
+
+export const journey_flotilla_patrol: Scenelet = {
+  id: id("journey_flotilla_patrol"),
+  title: "Flotilla Patrol",
+  tags: ["interaction", "military"],
+  requirements: {
+    context: "journey",
+  },
+  weight: 8,
+  cooldown: 5,
+  passages: [
+    {
+      text: `A military signature appears on sensors—Argent Flotilla
+configuration. They're running patrol patterns, sweeping
+for threats.
+When they notice you, a hail comes through. Professional.
+Clipped.
+"Civilian vessel, identify yourself and state your cargo.
+This is a security zone."`,
+      choices: [
+        {
+          text: "Comply with identification",
+          effects: {},
+          nextPassage: 1,
+        },
+        {
+          text: "Ask why this is a security zone",
+          effects: {},
+          nextPassage: 2,
+        },
+        {
+          text: "Try to slip away quietly",
+          effects: {
+            resources: {
+              fuel: -5,
+            },
+          },
+          nextPassage: 3,
+        },
+      ],
+    },
+    {
+      text: `You transmit your registration and manifest. The patrol
+vessel processes, cross-references, returns a verdict.
+"Blackwing. Free trader, no outstanding warrants. Cargo
+appears legitimate."
+A pause. Then, almost friendly: "We've had Sera activity
+in this sector. Watch yourself."`,
+      choices: [
+        {
+          text: "Thank them and continue",
+          effects: {
+            addChronicle: {
+              title: "Flotilla Patrol",
+              text: "Encountered an Argent Flotilla patrol. They warned about Sera activity.",
+            },
+            setFlags: {
+              flotilla_friendly: true,
+            },
+          },
+        },
+        {
+          text: "Ask about the Sera activity",
+          effects: {},
+          nextPassage: 4,
+        },
+      ],
+    },
+    {
+      text: `"Recent activity. A scouting element passed through two
+cycles ago. We drove them off, but where there's one,
+there's more."
+The patrol vessel's signal carries the weight of too
+many battles.
+"If you see anything—unusual energy signatures, ships
+that don't respond to hails—report it. We pay for
+good intelligence."`,
+      choices: [
+        {
+          text: "Offer to help",
+          effects: {
+            addChronicle: {
+              title: "Flotilla Patrol",
+              text: "Offered to report Sera activity to the Flotilla. They appreciated it.",
+            },
+            setFlags: {
+              flotilla_ally: true,
+            },
+          },
+        },
+        {
+          text: "Continue on your way",
+          effects: {
+            addChronicle: {
+              title: "Flotilla Patrol",
+              text: "Encountered a Flotilla patrol in a Sera -active sector. Kept moving.",
+            },
+          },
+        },
+      ],
+    },
+    {
+      text: `You cut your drive signature and drift, hoping to avoid
+attention. The patrol vessel continues its pattern,
+sensors sweeping...
+And passes you by. Either they didn't notice, or they
+decided a silent freighter wasn't worth investigating.`,
+      choices: [
+        {
+          text: "Continue quietly",
+          effects: {
+            addChronicle: {
+              title: "Flotilla Patrol",
+              text: "Avoided a Flotilla patrol. Probably nothing to hide, but didn't want the hassle.",
+            },
+          },
+        },
+      ],
+    },
+    {
+      text: `"Breeding colony established itself on an automated
+station two sectors over. By the time we got there,
+they'd eaten through half the infrastructure."
+The patrol commander's signal carries weary frustration.
+"Three adults, maybe two dozen juveniles. Took us
+hours to clear them out. Damned things breed fast
+when they find good material to consume."`,
+      choices: [
+        {
+          text: "Sounds like a rough job",
+          effects: {
+            addChronicle: {
+              title: "Flotilla Patrol",
+              text: "Heard about a Sera breeding colony from a Flotilla patrol. Pest control on a military scale.",
+            },
+            resources: {
+              integrity: 2,
+            },
+            setFlags: {
+              flotilla_friendly: true,
+            },
+          },
+        },
+      ],
+    },
+  ],
+};
