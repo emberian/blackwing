@@ -1,6 +1,7 @@
-import type { Achievement, AchievementId, GameState } from '../../core/types.js';
+import type { Achievement, AchievementId, GameState, PortId } from '../../core/types.js';
 
 const id = (s: string): AchievementId => s as AchievementId;
+const portId = (s: string): PortId => s as PortId;
 
 export const ACHIEVEMENTS: Achievement[] = [
   // Journey Milestones
@@ -170,7 +171,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     icon: '🌑',
     hidden: true,
     check: (state: GameState) => {
-      const shadowMarket = state.world.ports['port_shadow_market' as any];
+      const shadowMarket = state.world.ports[portId('port_shadow_market')];
       return shadowMarket?.lastVisited !== undefined;
     },
   },

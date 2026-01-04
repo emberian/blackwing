@@ -1,6 +1,7 @@
-import type { Scenelet, SceneletId } from '../../core/types.js';
+import type { Scenelet, SceneletId, CardDefId } from '../../core/types.js';
 
 const id = (s: string): SceneletId => s as SceneletId;
+const cardId = (s: string): CardDefId => s as CardDefId;
 
 export const JOURNEY_SCENELETS: Scenelet[] = [
   {
@@ -51,7 +52,7 @@ You dock. The airlock cycles open on a ship that died during the Silence. The cr
           {
             text: 'Take the data core',
             effects: {
-              addCards: ['cargo_memory_cores' as any],
+              addCards: [cardId('cargo_memory_cores')],
               setFlags: { 'found_derelict_core': true },
               addChronicle: {
                 title: 'The Derelict\'s Secret',
@@ -250,7 +251,7 @@ They have nothing to offer but gratitude. Their ship is scrap. Their cargo, vent
             text: 'Take them aboard',
             effects: {
               resources: { supplies: -3, morale: 12 },
-              addCards: ['crew_stowaway' as any],
+              addCards: [cardId('crew_stowaway')],
               addChronicle: {
                 title: 'Rescue',
                 text: 'Pulled a survivor from the void. Another soul for the hold. They owe us their life—that\'s worth more than cargo.',
@@ -660,7 +661,7 @@ The energy signature comes from a chamber deep within. On a pedestal, a shard of
           {
             text: 'Take the shard',
             effects: {
-              addCards: ['relic_beacon_shard' as any],
+              addCards: [cardId('relic_beacon_shard')],
               setFlags: { 'took_beacon_shard': true },
               addChronicle: {
                 title: 'Beacon Shard',
@@ -906,7 +907,7 @@ They're nervous, but the crates look legitimate.`,
             text: 'Accept the deal',
             effects: {
               resources: { credits: -25 },
-              addCards: ['cargo_processed_metals' as any, 'cargo_processed_metals' as any],
+              addCards: [cardId('cargo_processed_metals'), cardId('cargo_processed_metals')],
               addChronicle: {
                 title: 'Opportunistic Purchase',
                 text: 'Acquired cargo at well below market rate. The seller\'s desperation was our opportunity.',
@@ -938,7 +939,7 @@ A glance over their shoulder. "Please. I just need to be gone."`,
             text: 'Buy the cargo and offer passage',
             effects: {
               resources: { credits: -25, supplies: -3, morale: 5 },
-              addCards: ['cargo_processed_metals' as any, 'cargo_processed_metals' as any, 'crew_stowaway' as any],
+              addCards: [cardId('cargo_processed_metals'), cardId('cargo_processed_metals'), cardId('crew_stowaway')],
               addChronicle: {
                 title: 'Mercy in the Margins',
                 text: 'Helped someone escape their debts. Another soul joins the hold. The Consortium won\'t be pleased.',
@@ -949,7 +950,7 @@ A glance over their shoulder. "Please. I just need to be gone."`,
             text: 'Just buy the cargo',
             effects: {
               resources: { credits: -25 },
-              addCards: ['cargo_processed_metals' as any, 'cargo_processed_metals' as any],
+              addCards: [cardId('cargo_processed_metals'), cardId('cargo_processed_metals')],
               addChronicle: {
                 title: 'Business Only',
                 text: 'Took the deal. Left the seller to their fate. Credits don\'t have memories.',
@@ -1032,7 +1033,7 @@ When you arrive, a figure in worn but expensive clothes is waiting. "Your ship. 
           {
             text: 'Accept the job',
             effects: {
-              addCards: ['cargo_contraband' as any],
+              addCards: [cardId('cargo_contraband')],
               setFlags: { 'smuggling_active': true },
               addChronicle: {
                 title: 'Shadow Work',
@@ -1065,7 +1066,7 @@ When you arrive, a figure in worn but expensive clothes is waiting. "Your ship. 
           {
             text: 'Good enough—accept',
             effects: {
-              addCards: ['cargo_contraband' as any],
+              addCards: [cardId('cargo_contraband')],
               setFlags: { 'smuggling_active': true },
               addChronicle: {
                 title: 'Shadow Work',
@@ -1137,7 +1138,7 @@ Could be true. Could be a lie. Out here, it's hard to tell.`,
             text: 'Welcome them aboard',
             effects: {
               resources: { morale: 5, supplies: -2 },
-              addCards: ['crew_stowaway' as any],
+              addCards: [cardId('crew_stowaway')],
               addChronicle: {
                 title: 'New Crew',
                 text: 'Found a stowaway. Gave them a home. The hold grows fuller, the family larger.',

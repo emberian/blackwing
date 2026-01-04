@@ -155,7 +155,12 @@ export function applyEffects(
     
     for (const cardDefId of effects.addCards) {
       const def = cardDefs.get(cardDefId);
-      if (!def) continue;
+      if (!def) {
+        if (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production') {
+          console.warn(`[applyEffects] Unknown card definition: ${cardDefId}`);
+        }
+        continue;
+      }
       
       const instanceId = `card-${Date.now()}-${Math.random().toString(36).slice(2)}` as CardInstanceId;
       instances[instanceId] = {

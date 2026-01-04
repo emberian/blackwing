@@ -1,6 +1,8 @@
-import type { CardDef, CardDefId } from '../../core/types.js';
+import type { CardDef, CardDefId, PortId, FactionId } from '../../core/types.js';
 
 const id = (s: string): CardDefId => s as CardDefId;
+const portId = (s: string): PortId => s as PortId;
+const factionId = (s: string): FactionId => s as FactionId;
 
 export const CARGO_CARDS: CardDef[] = [
   {
@@ -442,7 +444,7 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery'],
     effects: {},
     contractTerms: {
-      destination: 'port_frontier_station' as any,
+      destination: portId('port_frontier_station'),
       cycleLimit: 12,
       reward: { credits: 150 },
     },
@@ -457,12 +459,12 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery', 'medicine'],
     effects: {},
     contractTerms: {
-      destination: 'port_frontier_station' as any,
+      destination: portId('port_frontier_station'),
       cargoRequired: { cardDefId: id('cargo_medical_supplies'), quantity: 2 },
       cycleLimit: 8,
       reward: { credits: 350, morale: 15 },
       penalty: { morale: 20 },
-      reputationReward: { faction: 'faction_frontier_alliance' as any, amount: 15 },
+      reputationReward: { faction: factionId('faction_frontier_alliance'), amount: 15 },
     },
   },
   {
@@ -475,7 +477,7 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['smuggling', 'contraband'],
     effects: {},
     contractTerms: {
-      destination: 'port_shadow_market' as any,
+      destination: portId('port_shadow_market'),
       cycleLimit: 8,
       reward: { credits: 300 },
       penalty: { credits: 100 },
@@ -490,11 +492,11 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery', 'mineral'],
     effects: {},
     contractTerms: {
-      destination: 'port_industrial_complex' as any,
+      destination: portId('port_industrial_complex'),
       cargoRequired: { cardDefId: id('cargo_raw_ore'), quantity: 3 },
       cycleLimit: 10,
       reward: { credits: 200 },
-      reputationReward: { faction: 'faction_industrial_consortium' as any, amount: 10 },
+      reputationReward: { faction: factionId('faction_industrial_consortium'), amount: 10 },
     },
   },
   {
@@ -507,11 +509,11 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery', 'ancient'],
     effects: {},
     contractTerms: {
-      destination: 'port_research_station' as any,
+      destination: portId('port_research_station'),
       cargoRequired: { cardDefId: id('cargo_ancient_artifacts'), quantity: 1 },
       cycleLimit: 15,
       reward: { credits: 600 },
-      reputationReward: { faction: 'faction_science_collective' as any, amount: 25 },
+      reputationReward: { faction: factionId('faction_science_collective'), amount: 25 },
     },
   },
   {
@@ -523,12 +525,12 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery', 'organic'],
     effects: {},
     contractTerms: {
-      destination: 'port_research_station' as any,
+      destination: portId('port_research_station'),
       cargoRequired: { cardDefId: id('cargo_living_specimens'), quantity: 1 },
       cycleLimit: 6,
       reward: { credits: 280 },
       penalty: { morale: 10 },
-      reputationReward: { faction: 'faction_science_collective' as any, amount: 10 },
+      reputationReward: { faction: factionId('faction_science_collective'), amount: 10 },
     },
   },
   {
@@ -540,7 +542,7 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['delivery', 'luxury'],
     effects: {},
     contractTerms: {
-      destination: 'port_sanctuary' as any,
+      destination: portId('port_sanctuary'),
       cargoRequired: { cardDefId: id('cargo_luxury_goods'), quantity: 2 },
       cycleLimit: 10,
       reward: { credits: 250, morale: 5 },
@@ -556,7 +558,7 @@ export const CONTRACT_CARDS: CardDef[] = [
     tags: ['combat'],
     effects: {},
     contractTerms: {
-      destination: 'port_pirate_haven' as any,
+      destination: portId('port_pirate_haven'),
       cycleLimit: 8,
       reward: { credits: 400 },
       penalty: { morale: 5 },

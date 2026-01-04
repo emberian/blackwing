@@ -163,10 +163,17 @@ describe('Game Controller', () => {
       expect(result.message).toContain('Insufficient fuel');
     });
 
-    it('updates location after travel completes (with no events)', () => {
+    it('updates location after journey events are resolved', () => {
       const destination = createId.port('port_frontier_station');
       
       controller.travel(destination);
+      
+      while (controller.getJourneyState()) {
+        const event = controller.getCurrentEvent();
+        if (event) {
+          controller.resolveEventChoice(0);
+        }
+      }
       
       expect(controller.getState().world.currentLocation).toBe(destination);
     });
