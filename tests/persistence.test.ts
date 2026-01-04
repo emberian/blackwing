@@ -47,13 +47,13 @@ describe('Persistence Module', () => {
       
       expect(result).toBe(true);
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'cargo_hold_save',
+        'blackwing_save',
         JSON.stringify(state)
       );
     });
 
     it('loads game state from localStorage', () => {
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify(state));
+      localStorageMock.setItem('blackwing_save', JSON.stringify(state));
       
       const loaded = loadGameState();
       
@@ -69,14 +69,14 @@ describe('Persistence Module', () => {
 
     it('returns null for schema version mismatch', () => {
       const oldState = { ...state, schemaVersion: 1 };
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify(oldState));
+      localStorageMock.setItem('blackwing_save', JSON.stringify(oldState));
       
       const loaded = loadGameState();
       expect(loaded).toBeNull();
     });
 
     it('returns null for corrupted save data', () => {
-      localStorageMock.setItem('cargo_hold_save', 'not valid json{{{');
+      localStorageMock.setItem('blackwing_save', 'not valid json{{{');
       
       const loaded = loadGameState();
       expect(loaded).toBeNull();
@@ -86,7 +86,7 @@ describe('Persistence Module', () => {
       saveGameState(state);
       clearGameState();
       
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('cargo_hold_save');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('blackwing_save');
     });
   });
 
@@ -108,7 +108,7 @@ describe('Persistence Module', () => {
       
       expect(result).toBe(true);
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'cargo_hold_meta',
+        'blackwing_meta',
         JSON.stringify(meta)
       );
     });
@@ -125,7 +125,7 @@ describe('Persistence Module', () => {
           totalPortsDiscovered: 7,
         },
       };
-      localStorageMock.setItem('cargo_hold_meta', JSON.stringify(meta));
+      localStorageMock.setItem('blackwing_meta', JSON.stringify(meta));
       
       const loaded = loadMetaState();
       
@@ -142,7 +142,7 @@ describe('Persistence Module', () => {
     });
 
     it('returns initial meta state for corrupted data', () => {
-      localStorageMock.setItem('cargo_hold_meta', 'invalid json');
+      localStorageMock.setItem('blackwing_meta', 'invalid json');
       
       const loaded = loadMetaState();
       
@@ -300,8 +300,8 @@ describe('Persistence Module', () => {
       
       clearAllData();
       
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('cargo_hold_save');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('cargo_hold_meta');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('blackwing_save');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('blackwing_meta');
     });
   });
 });

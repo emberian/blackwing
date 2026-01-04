@@ -143,12 +143,12 @@ describe('Events Module', () => {
 
     it('respects maximum resource requirements', () => {
       const scenelets = [
-        createTestScenelet('low_morale_only', 100, { maxResources: { morale: 30 } }),
+        createTestScenelet('low_integrity_only', 100, { maxResources: { integrity: 30 } }),
         createTestScenelet('no_requirements', 100),
       ];
       
       const context: EventContext = {
-        state: { ...state, resources: { ...state.resources, morale: 75 } },
+        state: { ...state, resources: { ...state.resources, integrity: 75 } },
         cardDefs,
         rng: createSeededRng(12345),
         contextType: 'journey',
@@ -295,12 +295,12 @@ describe('Events Module', () => {
       expect(newState.resources.hull).toBe(state.ship.maxHull);
     });
 
-    it('clamps morale to 100', () => {
-      const effects = { resources: { morale: 500 } };
+    it('clamps integrity to 100', () => {
+      const effects = { resources: { integrity: 500 } };
       
       const newState = applyEffects(state, effects, cardDefs);
       
-      expect(newState.resources.morale).toBe(100);
+      expect(newState.resources.integrity).toBe(100);
     });
 
     it('sets flags', () => {
@@ -324,9 +324,10 @@ describe('Events Module', () => {
 
     it('removes cards from collection and deck', () => {
       const cargoId = 'test-cargo' as CardInstanceId;
+      const cardDefId = createId.cardDef('cargo_raw_ore');
       const instance: CardInstance = {
         instanceId: cargoId,
-        cardDefId: createId.cardDef('cargo_raw_ore'),
+        cardDefId,
         level: 1,
         condition: 100,
         mods: [],
@@ -343,7 +344,7 @@ describe('Events Module', () => {
         },
       };
       
-      const effects = { removeCards: [cargoId] };
+      const effects = { removeCards: [cardDefId] };
       
       const newState = applyEffects(stateWithCargo, effects, cardDefs);
       
@@ -360,21 +361,21 @@ describe('Events Module', () => {
       expect(newState.resources.hull).toBe(state.resources.hull - 25);
     });
 
-    it('applies morale damage', () => {
-      const effects = { damage: { morale: 15 } };
+    it('applies integrity damage', () => {
+      const effects = { damage: { integrity: 15 } };
       
       const newState = applyEffects(state, effects, cardDefs);
       
-      expect(newState.resources.morale).toBe(state.resources.morale - 15);
+      expect(newState.resources.integrity).toBe(state.resources.integrity - 15);
     });
 
     it('clamps damage to minimum 0', () => {
-      const effects = { damage: { hull: 9999, morale: 9999 } };
+      const effects = { damage: { hull: 9999, integrity: 9999 } };
       
       const newState = applyEffects(state, effects, cardDefs);
       
       expect(newState.resources.hull).toBe(0);
-      expect(newState.resources.morale).toBe(0);
+      expect(newState.resources.integrity).toBe(0);
     });
 
     it('adds chronicle entries', () => {
@@ -392,20 +393,20 @@ describe('Events Module', () => {
       const effects = {
         resources: { credits: 100, fuel: -5 },
         setFlags: { event_happened: true },
-        damage: { morale: 10 },
+        damage: { integrity: 10 },
         addChronicle: { title: 'Event', text: 'Something happened.' },
       };
       
       const initialCredits = state.resources.credits;
       const initialFuel = state.resources.fuel;
-      const initialMorale = state.resources.morale;
+      const initialIntegrity = state.resources.integrity;
       const initialChronicleLength = state.chronicle.length;
       
       const newState = applyEffects(state, effects, cardDefs);
       
       expect(newState.resources.credits).toBe(initialCredits + 100);
       expect(newState.resources.fuel).toBe(initialFuel - 5);
-      expect(newState.resources.morale).toBe(initialMorale - 10);
+      expect(newState.resources.integrity).toBe(initialIntegrity - 10);
       expect(newState.flags.event_happened).toBe(true);
       expect(newState.chronicle.length).toBe(initialChronicleLength + 1);
     });

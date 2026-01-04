@@ -39,7 +39,7 @@ describe('Game Controller', () => {
       
       expect(state.schemaVersion).toBe(2);
       expect(state.resources.credits).toBe(100);
-      expect(state.ship.name).toBe('Holdfast');
+      expect(state.ship.name).toBe('Blackwing');
     });
 
     it('creates controller with meta state', () => {
@@ -116,7 +116,7 @@ describe('Game Controller', () => {
       });
       
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'cargo_hold_save',
+        'blackwing_save',
         expect.any(String)
       );
     });
@@ -154,7 +154,7 @@ describe('Game Controller', () => {
       const zeroFuelController = createGameController(cardDefs, []);
       const modifiedState = { ...state, resources: { ...state.resources, fuel: 0 } };
       
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify({ ...modifiedState, schemaVersion: 2 }));
+      localStorageMock.setItem('blackwing_save', JSON.stringify({ ...modifiedState, schemaVersion: 2 }));
       zeroFuelController.load();
       
       const result = zeroFuelController.travel(createId.port('port_frontier_station'));
@@ -305,20 +305,20 @@ describe('Game Controller', () => {
         resources: { ...state.resources, hull: 0 },
       };
       
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify({ ...zeroHullState, schemaVersion: 2 }));
+      localStorageMock.setItem('blackwing_save', JSON.stringify({ ...zeroHullState, schemaVersion: 2 }));
       controller.load();
       
       expect(controller.isGameOver()).toBe(true);
     });
 
-    it('detects game over when morale reaches zero', () => {
+    it('detects game over when integrity reaches zero', () => {
       const state = controller.getState();
-      const zeroMoraleState: GameState = {
+      const zeroIntegrityState: GameState = {
         ...state,
-        resources: { ...state.resources, morale: 0 },
+        resources: { ...state.resources, integrity: 0 },
       };
       
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify({ ...zeroMoraleState, schemaVersion: 2 }));
+      localStorageMock.setItem('blackwing_save', JSON.stringify({ ...zeroIntegrityState, schemaVersion: 2 }));
       controller.load();
       
       expect(controller.isGameOver()).toBe(true);
@@ -334,7 +334,7 @@ describe('Game Controller', () => {
       controller.save();
       
       expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'cargo_hold_save',
+        'blackwing_save',
         expect.any(String)
       );
     });
@@ -347,7 +347,7 @@ describe('Game Controller', () => {
         schemaVersion: 2,
       };
       
-      localStorageMock.setItem('cargo_hold_save', JSON.stringify(modifiedState));
+      localStorageMock.setItem('blackwing_save', JSON.stringify(modifiedState));
       
       const loaded = controller.load();
       
@@ -411,8 +411,8 @@ describe('Game Controller', () => {
       
       controller.clearAll();
       
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('cargo_hold_save');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('cargo_hold_meta');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('blackwing_save');
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith('blackwing_meta');
       expect(controller.getState().resources.credits).toBe(100);
     });
   });

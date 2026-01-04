@@ -27,12 +27,12 @@ describe('Game Core', () => {
     it('creates valid initial state', () => {
       expect(state.schemaVersion).toBe(2);
       expect(state.resources.credits).toBe(100);
-      expect(state.ship.name).toBe('Holdfast');
+      expect(state.ship.name).toBe('Blackwing');
       expect(state.chronicle.length).toBe(1);
     });
 
-    it('starts at Haven Prime', () => {
-      expect(state.world.currentLocation).toBe(createId.port('port_haven_prime'));
+    it('starts at Thornwick Station', () => {
+      expect(state.world.currentLocation).toBe(createId.port('port_thornwick'));
     });
 
     it('has correct initial resources', () => {
@@ -41,7 +41,7 @@ describe('Game Core', () => {
         fuel: 35,
         supplies: 20,
         hull: 100,
-        morale: 75,
+        integrity: 75,
       });
     });
 
@@ -104,7 +104,7 @@ describe('Game Core', () => {
       expect(newState.resources.hull).toBeLessThan(initialHull);
     });
 
-    it('reduces morale when supplies run out', () => {
+    it('reduces integrity when supplies run out', () => {
       state = {
         ...state,
         resources: { ...state.resources, supplies: 1 },
@@ -113,7 +113,7 @@ describe('Game Core', () => {
       const newState = processJourneyWear(state, DEFAULT_CONFIG);
       
       expect(newState.resources.supplies).toBe(0);
-      expect(newState.resources.morale).toBeLessThan(state.resources.morale);
+      expect(newState.resources.integrity).toBeLessThan(state.resources.integrity);
     });
 
     it('advances cycle', () => {
@@ -132,7 +132,7 @@ describe('Game Core', () => {
       const cargoId = 'test-cargo' as CardInstanceId;
       const cargoInstance: CardInstance = {
         instanceId: cargoId,
-        cardDefId: createId.cardDef('cargo_cryo_seeds'),
+        cardDefId: createId.cardDef('cargo_precision_instruments'),
         level: 1,
         condition: 100,
         mods: [],
@@ -233,7 +233,7 @@ describe('Game Core', () => {
       it('rejects buying unavailable cargo', () => {
         const result = dispatch(
           state,
-          { type: 'TRADE_BUY', payload: { cardDefId: createId.cardDef('cargo_ancient_artifacts'), quantity: 1 } },
+          { type: 'TRADE_BUY', payload: { cardDefId: createId.cardDef('cargo_cataclysm_artifact'), quantity: 1 } },
           cardDefs
         );
         
@@ -281,7 +281,7 @@ describe('Game Core', () => {
       it('rejects travel to current location', () => {
         const result = dispatch(
           state,
-          { type: 'TRAVEL', payload: { destination: createId.port('port_haven_prime') } },
+          { type: 'TRAVEL', payload: { destination: createId.port('port_thornwick') } },
           cardDefs
         );
         
@@ -294,7 +294,7 @@ describe('Game Core', () => {
       it('allows hiring available crew', () => {
         const result = dispatch(
           state,
-          { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('crew_navigator') } },
+          { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('companion_nav_core') } },
           cardDefs
         );
         
@@ -565,7 +565,7 @@ describe('Advanced Actions', () => {
     it('adds crew to activeCrew when equipping', () => {
       const hireResult = dispatch(
         state,
-        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('crew_navigator') } },
+        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('companion_nav_core') } },
         cardDefs
       );
       
@@ -575,7 +575,7 @@ describe('Advanced Actions', () => {
     it('removes crew from activeCrew when unequipping', () => {
       const hireResult = dispatch(
         state,
-        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('crew_navigator') } },
+        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('companion_nav_core') } },
         cardDefs
       );
       
@@ -703,7 +703,7 @@ describe('Advanced Actions', () => {
       );
       
       const contractId = acceptResult.state.cards.activeContracts[0]!;
-      const initialMorale = acceptResult.state.resources.morale;
+      const initialIntegrity = acceptResult.state.resources.integrity;
       
       const abandonResult = dispatch(
         acceptResult.state,
@@ -713,7 +713,7 @@ describe('Advanced Actions', () => {
       
       expect(abandonResult.success).toBe(true);
       expect(abandonResult.state.cards.activeContracts).not.toContain(contractId);
-      expect(abandonResult.state.resources.morale).toBeLessThan(initialMorale);
+      expect(abandonResult.state.resources.integrity).toBeLessThan(initialIntegrity);
       expect(abandonResult.state.stats.contractsFailed).toBe(1);
     });
 
@@ -730,15 +730,15 @@ describe('Advanced Actions', () => {
   });
 
   describe('Crew Dismiss', () => {
-    it('dismisses crew and reduces morale', () => {
+    it('dismisses crew and reduces integrity', () => {
       const hireResult = dispatch(
         state,
-        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('crew_navigator') } },
+        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('companion_nav_core') } },
         cardDefs
       );
       
       const crewId = hireResult.state.cards.activeCrew[0]!;
-      const initialMorale = hireResult.state.resources.morale;
+      const initialIntegrity = hireResult.state.resources.integrity;
       
       const dismissResult = dispatch(
         hireResult.state,
@@ -750,7 +750,7 @@ describe('Advanced Actions', () => {
       expect(dismissResult.state.cards.activeCrew).not.toContain(crewId);
       expect(dismissResult.state.cards.deck).not.toContain(crewId);
       expect(dismissResult.state.cards.instances[crewId]).toBeUndefined();
-      expect(dismissResult.state.resources.morale).toBeLessThan(initialMorale);
+      expect(dismissResult.state.resources.integrity).toBeLessThan(initialIntegrity);
     });
 
     it('rejects dismissing nonexistent crew', () => {
@@ -771,7 +771,7 @@ describe('Advanced Actions', () => {
       
       const result = dispatch(
         state,
-        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('crew_navigator') } },
+        { type: 'CREW_HIRE', payload: { cardDefId: createId.cardDef('companion_nav_core') } },
         cardDefs
       );
       
@@ -891,15 +891,15 @@ describe('Resource Boundary Conditions', () => {
       expect(result.resources.hull).toBe(0);
     });
 
-    it('clamps morale to minimum of 0 when starving', () => {
+    it('clamps integrity to minimum of 0 when starving', () => {
       state = { 
         ...state, 
-        resources: { ...state.resources, supplies: 1, morale: 10 } 
+        resources: { ...state.resources, supplies: 1, integrity: 10 } 
       };
       
       const result = processJourneyWear(state, { ...DEFAULT_CONFIG, journeySupplyCost: 100 });
       
-      expect(result.resources.morale).toBe(0);
+      expect(result.resources.integrity).toBe(0);
     });
   });
 
@@ -1015,7 +1015,7 @@ describe('Resource Boundary Conditions', () => {
       expect(abandonResult.state.resources.credits).toBe(0);
     });
 
-    it('clamps morale to 0 on contract abandon', () => {
+    it('clamps integrity to 0 on contract abandon', () => {
       const acceptResult = dispatch(
         state,
         { type: 'CONTRACT_ACCEPT', payload: { cardDefId: createId.cardDef('contract_standard_delivery') } },
@@ -1023,18 +1023,18 @@ describe('Resource Boundary Conditions', () => {
       );
       
       const contractId = acceptResult.state.cards.activeContracts[0]!;
-      const stateWithLowMorale = {
+      const stateWithLowIntegrity = {
         ...acceptResult.state,
-        resources: { ...acceptResult.state.resources, morale: 1 },
+        resources: { ...acceptResult.state.resources, integrity: 1 },
       };
       
       const abandonResult = dispatch(
-        stateWithLowMorale,
+        stateWithLowIntegrity,
         { type: 'CONTRACT_ABANDON', payload: { instanceId: contractId } },
         cardDefs
       );
       
-      expect(abandonResult.state.resources.morale).toBe(0);
+      expect(abandonResult.state.resources.integrity).toBe(0);
     });
   });
 });
@@ -1056,11 +1056,11 @@ describe('Card Definitions', () => {
 
   it('has valid crew cards', () => {
     const cardDefs = buildCardDefMap();
-    const navigator = cardDefs.get(createId.cardDef('crew_navigator'));
+    const navCore = cardDefs.get(createId.cardDef('companion_nav_core'));
     
-    expect(navigator).toBeDefined();
-    expect(navigator?.type).toBe('crew');
-    expect(navigator?.effects.modifiers?.journeySpeed).toBeDefined();
+    expect(navCore).toBeDefined();
+    expect(navCore?.type).toBe('crew');
+    expect(navCore?.effects.modifiers?.journeySpeed).toBeDefined();
   });
 
   it('has valid module cards', () => {
