@@ -52,6 +52,10 @@ gloo-file = { workspace = true }
 gloo-utils = { workspace = true }
 console_error_panic_hook = { workspace = true }
 
+# Logging
+tracing = { workspace = true }
+tracing-wasm = "0.2"
+
 # WASM-compatible random (required for dependencies that use getrandom)
 getrandom = { workspace = true }
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }

@@ -23,10 +23,13 @@ pub fn main() {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
-    web_sys::console::log_1(&"[holdsmith] WASM module loaded".into());
+    // Initialize tracing with browser console output
+    tracing_wasm::set_as_global_default();
+
+    tracing::info!("[holdsmith] WASM module loaded");
 
     // Mount the Leptos app
     leptos::mount::mount_to_body(App);
 
-    web_sys::console::log_1(&"[holdsmith] Leptos app mounted".into());
+    tracing::info!("[holdsmith] Leptos app mounted");
 }

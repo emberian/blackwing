@@ -381,6 +381,7 @@ dependencies = [
  "engine-runtime",
  "engine-systems",
  "engine-world",
+ "getrandom 0.3.4",
  "js-sys",
  "serde",
  "serde_json",
@@ -1353,7 +1354,6 @@ dependencies = [
  "engine-primitives",
  "engine-world",
  "indexmap 2.12.1",
- "parking_lot",
  "rhai",
  "rustc-hash 2.1.1",
  "smol_str",
@@ -2120,6 +2120,8 @@ dependencies = [
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
+ "tracing",
+ "tracing-wasm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
@@ -6035,6 +6037,17 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "tracing-wasm"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4575c663a174420fa2d78f4108ff68f65bf2fbb7dd89f33749b6e826b3626e07"
+dependencies = [
+ "tracing",
+ "tracing-subscriber",
+ "wasm-bindgen",
 ]
 
 [[package]]

@@ -62,12 +62,16 @@ pub enum RightPanel {
 /// Root application component.
 #[component]
 pub fn App() -> impl IntoView {
+    tracing::debug!("Initializing App component");
+
     // Create the global app context
     let ctx = AppContext::new();
     provide_context(ctx.clone());
 
     // Track which right panel is active
     let right_panel = RwSignal::new(RightPanel::Analyzer);
+
+    tracing::info!("App component initialized successfully");
 
     view! {
         <div class="app">

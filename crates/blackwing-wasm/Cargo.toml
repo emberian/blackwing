@@ -21,5 +21,8 @@ wasm-bindgen = { workspace = true }
 js-sys = { workspace = true }
 console_error_panic_hook = { workspace = true, optional = true }
 
+# WASM-compatible random (ensures getrandom uses JS backend)
+getrandom = { workspace = true }
+
 [features]
 default = ["console_error_panic_hook"]
