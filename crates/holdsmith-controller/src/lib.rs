@@ -8,6 +8,7 @@
 //! - Player state (scene playback)
 
 mod commands;
+mod full_player;
 mod state;
 mod view_models;
 mod wasm_vfs;
@@ -15,6 +16,10 @@ mod wasm_vfs;
 pub use wasm_vfs::WasmMemoryFS;
 
 pub use commands::{Command, CommandResult};
+pub use full_player::{
+    ChronicleSnapshot, FlagSnapshot, FullPlayerChoice, FullPlayerChoiceSnapshot, FullPlayerSnapshot,
+    FullPlayerState, ResourceSnapshot,
+};
 pub use state::{
     AnalyzerSnapshot, AnalyzerState, AppState, AppStateSnapshot, DebugLocation, DebuggerSnapshot,
     DebuggerState, EditorSnapshot, EditorState, PlayerChoiceSnapshot, PlayerSnapshot, PlayerState,

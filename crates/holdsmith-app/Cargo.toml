@@ -17,6 +17,7 @@ tauri = []  # Enable Tauri IPC backend
 
 [dependencies]
 holdsmith-controller = { path = "../holdsmith-controller", default-features = false }
+blackwing-ui = { path = "../blackwing-ui" }
 
 # Leptos
 leptos = { workspace = true }

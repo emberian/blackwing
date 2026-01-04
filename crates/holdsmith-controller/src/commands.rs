@@ -75,6 +75,20 @@ pub enum Command {
     MakeChoice { index: usize },
     /// Restart the current scene.
     RestartScene,
+
+    // === Full Player commands ===
+    /// Start full play mode with actual game engine.
+    StartFullPlay { scene_id: String },
+    /// Stop full play mode.
+    StopFullPlay,
+    /// Make a choice in full play mode.
+    FullPlayChoice { index: usize },
+    /// Reset full player game state.
+    ResetFullPlayState { seed: Option<u64> },
+    /// Set a resource value (for testing).
+    SetFullPlayResource { name: String, value: i64 },
+    /// Set a flag value (for testing).
+    SetFullPlayFlag { name: String, value: String },
 }
 
 /// Result of dispatching a command.
@@ -467,6 +481,62 @@ pub fn dispatch(state: &mut AppState, cmd: Command) -> CommandResult {
                     scene_id: scene_id.to_string(),
                 },
             )
+        }
+
+        // === Full Player ===
+        Command::StartFullPlay { scene_id } => {
+            // Sync compiled scenes to full player
+            state.full_player.sync_scenes(&state.analyzer.compiled_scenes);
+
+            // Start playing
+            if let Err(e) = state.full_player.start(&scene_id) {
+                return CommandResult::err(e);
+            }
+            CommandResult::ok()
+        }
+
+        Command::StopFullPlay => {
+            state.full_player.stop();
+            CommandResult::ok()
+        }
+
+        Command::FullPlayChoice { index } => {
+            if let Err(e) = state.full_player.make_choice(index) {
+                return CommandResult::err(e);
+            }
+            CommandResult::ok()
+        }
+
+        Command::ResetFullPlayState { seed } => {
+            let seed = seed.unwrap_or_else(|| {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(12345)
+            });
+            state.full_player.reset_state(seed);
+            CommandResult::ok()
+        }
+
+        Command::SetFullPlayResource { name, value } => {
+            state.full_player.set_resource(&name, value);
+            CommandResult::ok()
+        }
+
+        Command::SetFullPlayFlag { name, value } => {
+            // Parse value as JSON to get the right type
+            let val = if value == "true" {
+                engine_core::Value::Bool(true)
+            } else if value == "false" {
+                engine_core::Value::Bool(false)
+            } else if let Ok(n) = value.parse::<i64>() {
+                engine_core::Value::Int(n)
+            } else {
+                engine_core::Value::String(value.into())
+            };
+            state.full_player.set_flag(&name, val);
+            CommandResult::ok()
         }
     }
 }

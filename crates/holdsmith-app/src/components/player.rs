@@ -3,6 +3,8 @@
 use leptos::prelude::*;
 use std::sync::Arc;
 
+use blackwing_ui::{Choice, ChoiceButton, StaticPassage};
+
 use crate::app::AppContext;
 
 /// Player panel for testing scenes interactively.
@@ -112,32 +114,29 @@ pub fn PlayerPanel() -> impl IntoView {
                     let state = player_state_content();
                     let make_choice = make_choice.clone();
                     if state.active {
+                        // Convert controller choices to blackwing_ui choices
+                        let choices: Vec<_> = state.choices.iter().map(|c| {
+                            if c.enabled {
+                                Choice::new(&c.text)
+                            } else {
+                                Choice::disabled(&c.text, c.disabled_reason.as_deref().unwrap_or(""))
+                            }
+                        }).collect();
+
                         view! {
                             <div class="passage">
-                                <div class="passage-text">
-                                    {state.passage_text.clone()}
-                                </div>
+                                <StaticPassage text=state.passage_text.clone() />
 
-                                <div class="choices">
-                                    {state.choices.iter().map(|choice| {
-                                        let idx = choice.index;
-                                        let is_enabled = choice.enabled;
-                                        let text = choice.text.clone();
-                                        let reason = choice.disabled_reason.clone();
+                                <div class="bw-choices">
+                                    {choices.into_iter().enumerate().map(|(idx, choice)| {
                                         let make_choice = make_choice.clone();
+                                        let on_click: Arc<dyn Fn(usize) + Send + Sync> = Arc::new(move |i| make_choice(i));
                                         view! {
-                                            <button
-                                                class="choice-btn"
-                                                class:disabled=!is_enabled
-                                                disabled=!is_enabled
-                                                on:click={
-                                                    let make_choice = make_choice.clone();
-                                                    move |_| make_choice(idx)
-                                                }
-                                                title=move || reason.clone().unwrap_or_default()
-                                            >
-                                                {text}
-                                            </button>
+                                            <ChoiceButton
+                                                choice=choice
+                                                index=idx
+                                                on_click=on_click
+                                            />
                                         }
                                     }).collect::<Vec<_>>()}
                                 </div>

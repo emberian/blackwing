@@ -7,7 +7,8 @@ use leptos::prelude::*;
 
 use crate::backend::{create_backend, Backend};
 use crate::components::{
-    AnalyzerPanel, BrowserPanel, DebuggerPanel, EditorPanel, PlayerPanel, StatusBar, Toolbar,
+    AnalyzerPanel, BrowserPanel, DebuggerPanel, EditorPanel, FullPlayerPanel, PlayerPanel,
+    StatusBar, Toolbar,
 };
 
 /// The root application state, wrapping the backend.
@@ -57,12 +58,16 @@ pub enum RightPanel {
     Analyzer,
     Debugger,
     Player,
+    FullPlayer,
 }
 
 /// Root application component.
 #[component]
 pub fn App() -> impl IntoView {
     tracing::debug!("Initializing App component");
+
+    // Inject shared UI styles
+    blackwing_ui::inject_styles();
 
     // Create the global app context
     let ctx = AppContext::new();
@@ -107,7 +112,13 @@ pub fn App() -> impl IntoView {
                             class:active=move || right_panel.get() == RightPanel::Player
                             on:click=move |_| right_panel.set(RightPanel::Player)
                         >
-                            "Player"
+                            "Simple"
+                        </button>
+                        <button
+                            class:active=move || right_panel.get() == RightPanel::FullPlayer
+                            on:click=move |_| right_panel.set(RightPanel::FullPlayer)
+                        >
+                            "Full Play"
                         </button>
                     </div>
 
@@ -116,6 +127,7 @@ pub fn App() -> impl IntoView {
                             RightPanel::Analyzer => view! { <AnalyzerPanel /> }.into_any(),
                             RightPanel::Debugger => view! { <DebuggerPanel /> }.into_any(),
                             RightPanel::Player => view! { <PlayerPanel /> }.into_any(),
+                            RightPanel::FullPlayer => view! { <FullPlayerPanel /> }.into_any(),
                         }}
                     </div>
                 </aside>

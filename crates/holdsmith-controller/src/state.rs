@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use vfs::VfsPath;
 
+use crate::full_player::{FullPlayerSnapshot, FullPlayerState};
 use crate::view_models::{DiagnosticViewModel, FileTreeNode};
 
 /// Complete application state.
@@ -19,6 +20,7 @@ pub struct AppState {
     pub analyzer: AnalyzerState,
     pub debugger: DebuggerState,
     pub player: PlayerState,
+    pub full_player: FullPlayerState,
 }
 
 impl AppState {
@@ -32,6 +34,7 @@ impl AppState {
             analyzer: AnalyzerState::default(),
             debugger: DebuggerState::default(),
             player: PlayerState::default(),
+            full_player: FullPlayerState::default(),
         }
     }
 }
@@ -246,6 +249,7 @@ pub struct AppStateSnapshot {
     pub analyzer: AnalyzerSnapshot,
     pub debugger: DebuggerSnapshot,
     pub player: PlayerSnapshot,
+    pub full_player: FullPlayerSnapshot,
 }
 
 /// Snapshot of project state.
@@ -345,6 +349,7 @@ impl AppState {
                     disabled_reason: c.disabled_reason.clone(),
                 }).collect(),
             },
+            full_player: self.full_player.snapshot(),
         }
     }
 }
