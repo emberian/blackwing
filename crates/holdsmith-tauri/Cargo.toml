@@ -1,0 +1,24 @@
+[package]
+name = "holdsmith-tauri"
+version.workspace = true
+edition.workspace = true
+description = "Native desktop app for Holdsmith IDE"
+default-run = "holdsmith-tauri"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+holdsmith-controller = { path = "../holdsmith-controller", features = ["z3"] }
+holdsmith-analyzer = { path = "../holdsmith-analyzer", features = ["z3"] }
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { workspace = true }
+serde_json = { workspace = true }
+vfs = "0.12"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

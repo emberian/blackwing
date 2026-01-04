@@ -5,10 +5,11 @@ use std::collections::{HashMap, HashSet};
 use engine_core::Scene;
 use holdsmith_analyzer::{AnalysisResult, Diagnostic, SceneCfg};
 use holdsmith_parser::SceneFile;
+use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 use vfs::VfsPath;
 
-use crate::view_models::FileTreeNode;
+use crate::view_models::{DiagnosticViewModel, FileTreeNode};
 
 /// Complete application state.
 #[derive(Debug)]
@@ -177,7 +178,7 @@ pub struct AnalyzerState {
 }
 
 /// Debugger state: breakpoints and execution state.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct DebuggerState {
     /// Whether the debugger is active.
     pub active: bool,
@@ -201,7 +202,7 @@ pub struct DebugLocation {
 }
 
 /// Player state: scene playback for testing.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PlayerState {
     /// Whether the player is active.
     pub active: bool,
@@ -231,4 +232,119 @@ pub struct PlayerChoice {
 pub struct PlayerHistoryEntry {
     pub passage_index: usize,
     pub choice_index: Option<usize>,
+}
+
+// ============================================================================
+// Serializable Snapshots (for IPC)
+// ============================================================================
+
+/// Serializable snapshot of the entire application state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AppStateSnapshot {
+    pub project: ProjectSnapshot,
+    pub editor: EditorSnapshot,
+    pub analyzer: AnalyzerSnapshot,
+    pub debugger: DebuggerSnapshot,
+    pub player: PlayerSnapshot,
+}
+
+/// Snapshot of project state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ProjectSnapshot {
+    pub open_files: Vec<String>,
+    pub active_file: Option<String>,
+    pub dirty_files: Vec<String>,
+    pub file_tree: Vec<FileTreeNode>,
+}
+
+/// Snapshot of editor state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EditorSnapshot {
+    pub content: String,
+    pub cursor: (usize, usize),
+    pub selection: Option<(usize, usize)>,
+    pub parse_errors: Vec<String>,
+    pub diagnostics: Vec<DiagnosticViewModel>,
+}
+
+/// Snapshot of analyzer state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct AnalyzerSnapshot {
+    pub analyzing: bool,
+    pub compiled_scene_ids: Vec<String>,
+    pub has_cfg: bool,
+}
+
+/// Snapshot of debugger state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct DebuggerSnapshot {
+    pub active: bool,
+    pub scene_id: Option<String>,
+    pub passage_index: Option<usize>,
+    pub paused: bool,
+    pub breakpoints: Vec<(String, usize)>,
+}
+
+/// Snapshot of player state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PlayerSnapshot {
+    pub active: bool,
+    pub scene_id: Option<String>,
+    pub passage_index: usize,
+    pub passage_text: String,
+    pub choices: Vec<PlayerChoiceSnapshot>,
+}
+
+/// Snapshot of a player choice.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlayerChoiceSnapshot {
+    pub index: usize,
+    pub text: String,
+    pub enabled: bool,
+    pub disabled_reason: Option<String>,
+}
+
+impl AppState {
+    /// Create a serializable snapshot of the current state.
+    pub fn snapshot(&self) -> AppStateSnapshot {
+        AppStateSnapshot {
+            project: ProjectSnapshot {
+                open_files: self.project.open_files.clone(),
+                active_file: self.project.active_file.clone(),
+                dirty_files: self.project.dirty_files.iter().cloned().collect(),
+                file_tree: self.project.file_tree.clone(),
+            },
+            editor: EditorSnapshot {
+                content: self.editor.content.clone(),
+                cursor: self.editor.cursor,
+                selection: self.editor.selection,
+                parse_errors: self.editor.parse_errors.clone(),
+                diagnostics: self.editor.diagnostics.iter().map(DiagnosticViewModel::from).collect(),
+            },
+            analyzer: AnalyzerSnapshot {
+                analyzing: self.analyzer.analyzing,
+                compiled_scene_ids: self.analyzer.compiled_scenes.keys().map(|s| s.to_string()).collect(),
+                has_cfg: self.analyzer.cfg.is_some(),
+            },
+            debugger: DebuggerSnapshot {
+                active: self.debugger.active,
+                scene_id: self.debugger.scene_id.as_ref().map(|s| s.to_string()),
+                passage_index: self.debugger.passage_index,
+                paused: self.debugger.paused,
+                breakpoints: self.debugger.breakpoints.iter().map(|(s, i)| (s.to_string(), *i)).collect(),
+            },
+            player: PlayerSnapshot {
+                active: self.player.active,
+                scene_id: self.player.scene_id.as_ref().map(|s| s.to_string()),
+                passage_index: self.player.passage_index,
+                passage_text: self.player.passage_text.clone(),
+                choices: self.player.choices.iter().map(|c| PlayerChoiceSnapshot {
+                    index: c.index,
+                    text: c.text.clone(),
+                    enabled: c.enabled,
+                    disabled_reason: c.disabled_reason.clone(),
+                }).collect(),
+            },
+        }
+    }
 }

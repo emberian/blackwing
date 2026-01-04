@@ -13,10 +13,13 @@ mod view_models;
 
 pub use commands::{Command, CommandResult};
 pub use state::{
-    AppState, AnalyzerState, DebugLocation, DebuggerState, EditorState, PlayerState, ProjectState,
+    AnalyzerSnapshot, AnalyzerState, AppState, AppStateSnapshot, DebugLocation, DebuggerSnapshot,
+    DebuggerState, EditorSnapshot, EditorState, PlayerChoiceSnapshot, PlayerSnapshot, PlayerState,
+    ProjectSnapshot, ProjectState,
 };
 pub use view_models::{
-    ChoiceViewModel, DiagnosticViewModel, FileTreeNode, PassageViewModel, StateInspector,
+    ChoiceViewModel, DiagnosticViewModel, FileTreeNode, LocationViewModel, PassageViewModel,
+    SeverityViewModel, StateInspector,
 };
 
 use vfs::{MemoryFS, VfsPath};
@@ -105,6 +108,11 @@ impl Controller {
     /// Make a choice in the player.
     pub fn make_choice(&mut self, index: usize) -> CommandResult {
         self.dispatch(Command::MakeChoice { index })
+    }
+
+    /// Create a serializable snapshot of the current state.
+    pub fn snapshot(&self) -> AppStateSnapshot {
+        self.state.snapshot()
     }
 
     /// Export the project as a zip file.

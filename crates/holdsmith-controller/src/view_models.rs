@@ -1,9 +1,10 @@
 //! View models for UI rendering.
 
 use holdsmith_analyzer::{Diagnostic, DiagnosticLocation, Severity};
+use serde::{Deserialize, Serialize};
 
 /// A node in the file tree.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileTreeNode {
     /// File or directory name.
     pub name: String,
@@ -18,7 +19,7 @@ pub struct FileTreeNode {
 }
 
 /// View model for a diagnostic.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiagnosticViewModel {
     pub severity: SeverityViewModel,
     pub code: String,
@@ -27,14 +28,14 @@ pub struct DiagnosticViewModel {
     pub help: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum SeverityViewModel {
     Error,
     Warning,
     Info,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LocationViewModel {
     pub description: String,
     pub passage_index: Option<usize>,
@@ -86,7 +87,7 @@ impl From<&Diagnostic> for DiagnosticViewModel {
 }
 
 /// View model for a passage (for CFG visualization).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PassageViewModel {
     pub index: usize,
     pub name: String,
@@ -99,7 +100,7 @@ pub struct PassageViewModel {
 }
 
 /// View model for a choice (edge in CFG).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ChoiceViewModel {
     pub index: usize,
     pub text: String,
@@ -111,20 +112,20 @@ pub struct ChoiceViewModel {
 }
 
 /// State inspector view model.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct StateInspector {
     pub resources: Vec<ResourceEntry>,
     pub flags: Vec<FlagEntry>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ResourceEntry {
     pub name: String,
     pub value: i64,
     pub max: Option<i64>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FlagEntry {
     pub name: String,
     pub value: String,

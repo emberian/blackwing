@@ -1,0 +1,66 @@
+[package]
+name = "holdsmith-app"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+z3 = ["holdsmith-controller/z3"]
+hydrate = ["leptos/hydrate"]
+ssr = ["leptos/ssr"]
+tauri = []  # Enable Tauri IPC backend
+
+[dependencies]
+holdsmith-controller = { path = "../holdsmith-controller", default-features = false }
+
+# Leptos
+leptos = { version = "0.8", features = ["csr"] }
+leptos_meta = { version = "0.8" }
+
+# WASM
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = [
+    "console",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlInputElement",
+    "HtmlTextAreaElement",
+    "Window",
+    "Event",
+    "MouseEvent",
+    "KeyboardEvent",
+    "CustomEvent",
+    "FileReader",
+    "Blob",
+    "File",
+    "FileList",
+    "DragEvent",
+    "DataTransfer",
+] }
+
+# Utilities
+gloo-timers = "0.3"
+gloo-file = "0.3"
+gloo-utils = "0.2"
+console_error_panic_hook = "0.1"
+
+# WASM-compatible random (required for dependencies that use getrandom)
+getrandom = { version = "0.3", features = ["wasm_js"] }
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+
+# Direct dependency for diagnostics type (no parallel for WASM)
+holdsmith-analyzer = { path = "../holdsmith-analyzer", default-features = false }
+
+# Serialization (for JS interop)
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde-wasm-bindgen = "0.6"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3"

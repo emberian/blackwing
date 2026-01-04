@@ -1,0 +1,19 @@
+{
+  "$schema": "https://schema.tauri.app/config/2/capabilities",
+  "identifier": "default",
+  "description": "Default capabilities for Holdsmith IDE",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-message",
+    "dialog:allow-confirm",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-read-dir",
+    "fs:allow-create",
+    "fs:allow-remove"
+  ]
+}

@@ -4,12 +4,13 @@ use engine_core::Navigation;
 use holdsmith_analyzer::{analyze_scene, build_cfg, generate_diagnostics};
 use holdsmith_compiler::compile;
 use holdsmith_parser::parse;
+use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
 use crate::state::{AppState, PlayerChoice, PlayerHistoryEntry};
 
 /// Commands that can be dispatched to the controller.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     // === Project commands ===
     /// Create a new project (clears filesystem).
@@ -77,7 +78,7 @@ pub enum Command {
 }
 
 /// Result of dispatching a command.
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CommandResult {
     /// Whether the command succeeded.
     pub success: bool,
