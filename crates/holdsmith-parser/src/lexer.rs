@@ -88,7 +88,10 @@ pub enum RawToken {
     })]
     String(String),
 
-    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string())]
+    #[token("when")]
+    When,
+
+    #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),
 
     #[token("\n")]
@@ -129,6 +132,7 @@ pub enum Token {
     String(SmolStr),
     Identifier(SmolStr),
     Text(SmolStr),
+    When,
     Newline,
     Indent,
     Dedent,
@@ -167,6 +171,7 @@ impl std::fmt::Display for Token {
             Token::String(s) => write!(f, "\"{}\"", s),
             Token::Identifier(s) => write!(f, "{}", s),
             Token::Text(s) => write!(f, "text({:?})", s),
+            Token::When => write!(f, "when"),
             Token::Newline => write!(f, "\\n"),
             Token::Indent => write!(f, "INDENT"),
             Token::Dedent => write!(f, "DEDENT"),
@@ -475,6 +480,7 @@ impl Iterator for Lexer<'_> {
             RawToken::PlusEq => Some(SpannedToken { token: Token::PlusEq, span }),
             RawToken::MinusEq => Some(SpannedToken { token: Token::MinusEq, span }),
             RawToken::Eq => Some(SpannedToken { token: Token::Eq, span }),
+            RawToken::When => Some(SpannedToken { token: Token::When, span }),
             RawToken::Comment => self.next(),
         }
     }

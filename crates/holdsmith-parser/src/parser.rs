@@ -5,8 +5,8 @@ use crate::{
     AddCardEffect, AssignOp, Choice, ChronicleEffect, CompareOp, Condition, ConditionClause,
     Context, DamageEffect, Effect, FlagCondition, FlagEffect, FlagValue, Frontmatter,
     NavigationTarget, ParseError, Passage, PassageContent, Prose, RemoveCardsEffect,
-    ReputationEffect, Requirements, ResourceCheck, ResourceCondition, ResourceEffect, SceneFile,
-    Span, TagCondition, TagSource,
+    ReputationEffect, Requirements, ResourceCheck, ResourceCondition, ResourceEffect, RhaiBlock,
+    SceneFile, ScriptEffect, Span, TagCondition, TagSource,
 };
 
 const RESOURCES: &[&str] = &["credits", "fuel", "supplies", "hull", "morale", "integrity"];
@@ -328,6 +328,11 @@ impl Parser {
                     flush_prose(&mut content, &mut prose_lines, &mut prose_start);
                     content.push(PassageContent::Choice(self.parse_choice()?));
                 }
+                Token::LBrace => {
+                    // Inline Rhai block at passage level
+                    flush_prose(&mut content, &mut prose_lines, &mut prose_start);
+                    content.push(PassageContent::RhaiBlock(self.parse_rhai_block()?));
+                }
                 Token::Identifier(_) | Token::Text(_) => {
                     if prose_start.is_none() {
                         prose_start = Some(self.current_span());
@@ -421,9 +426,11 @@ impl Parser {
         let text = SmolStr::new(&text_parts.join(" "));
         self.consume(&Token::RBracket, "Expected ] to close choice text")?;
 
-        // Optional condition: { ... }
+        // Optional condition: { ... } or `when <expr>`
         let condition = if self.check(&Token::LBrace) {
             Some(self.parse_condition()?)
+        } else if self.check(&Token::When) {
+            Some(self.parse_when_condition()?)
         } else {
             None
         };
@@ -930,6 +937,21 @@ impl Parser {
             }));
         }
 
+        // Script effect: ~ script: <code> or ~ script: |
+        if keyword.as_str() == "script" {
+            // Expect colon after "script"
+            self.consume(&Token::Colon, "Expected ':' after 'script'")?;
+
+            // Check if this is a multi-line script block (indicated by being on next line after indent)
+            // or an inline script
+            let script_source = self.collect_script_source()?;
+
+            return Ok(Effect::Script(ScriptEffect {
+                source: SmolStr::new(&script_source),
+                span: start_span.start..self.current_span().start,
+            }));
+        }
+
         Err(ParseError::InvalidEffect {
             message: format!("Unknown effect: {}", keyword),
             span: start_span,
@@ -977,6 +999,190 @@ impl Parser {
         Ok(NavigationTarget {
             target,
             is_end,
+            span: start_span.start..self.current_span().start,
+        })
+    }
+
+    /// Collect script source from `~ script:` effect.
+    /// Handles both inline and multi-line (indented block) formats.
+    fn collect_script_source(&mut self) -> Result<String, ParseError> {
+        // Skip any whitespace after the colon
+        // Check if we have an indent (multi-line block)
+        if self.match_token(&Token::Newline) {
+            if self.match_token(&Token::Indent) {
+                // Multi-line script block
+                let mut lines = Vec::new();
+                let mut current_line = Vec::new();
+
+                while !self.check(&Token::Dedent) && !self.is_at_end() {
+                    match self.current_token() {
+                        Token::Newline => {
+                            if !current_line.is_empty() {
+                                lines.push(current_line.join(" "));
+                                current_line.clear();
+                            }
+                            self.advance();
+                        }
+                        _ => {
+                            // Collect all tokens on this line
+                            let part = match self.current_token() {
+                                Token::Identifier(s) => s.to_string(),
+                                Token::Number(n) => n.to_string(),
+                                Token::Float(f) => f.to_string(),
+                                Token::String(s) => format!("\"{}\"", s),
+                                Token::LBrace => "{".to_string(),
+                                Token::RBrace => "}".to_string(),
+                                Token::LParen => "(".to_string(),
+                                Token::RParen => ")".to_string(),
+                                Token::LBracket => "[".to_string(),
+                                Token::RBracket => "]".to_string(),
+                                Token::Comma => ",".to_string(),
+                                Token::Colon => ":".to_string(),
+                                Token::Dot => ".".to_string(),
+                                Token::Bang => "!".to_string(),
+                                Token::Ge => ">=".to_string(),
+                                Token::Le => "<=".to_string(),
+                                Token::EqEq => "==".to_string(),
+                                Token::Ne => "!=".to_string(),
+                                Token::Gt => ">".to_string(),
+                                Token::Lt => "<".to_string(),
+                                Token::PlusEq => "+=".to_string(),
+                                Token::MinusEq => "-=".to_string(),
+                                Token::Eq => "=".to_string(),
+                                Token::When => "when".to_string(),
+                                _ => String::new(),
+                            };
+                            if !part.is_empty() {
+                                current_line.push(part);
+                            }
+                            self.advance();
+                        }
+                    }
+                }
+
+                if !current_line.is_empty() {
+                    lines.push(current_line.join(" "));
+                }
+
+                if self.check(&Token::Dedent) {
+                    self.advance();
+                }
+
+                return Ok(lines.join("\n"));
+            }
+        }
+
+        // Inline script - collect rest of line
+        let mut parts = Vec::new();
+        while !self.check(&Token::Newline) && !self.is_at_end() {
+            let part = match self.current_token() {
+                Token::Identifier(s) => s.to_string(),
+                Token::Number(n) => n.to_string(),
+                Token::Float(f) => f.to_string(),
+                Token::String(s) => format!("\"{}\"", s),
+                Token::LBrace => "{".to_string(),
+                Token::RBrace => "}".to_string(),
+                Token::LParen => "(".to_string(),
+                Token::RParen => ")".to_string(),
+                Token::LBracket => "[".to_string(),
+                Token::RBracket => "]".to_string(),
+                Token::Comma => ",".to_string(),
+                Token::Colon => ":".to_string(),
+                Token::Dot => ".".to_string(),
+                Token::Bang => "!".to_string(),
+                Token::Ge => ">=".to_string(),
+                Token::Le => "<=".to_string(),
+                Token::EqEq => "==".to_string(),
+                Token::Ne => "!=".to_string(),
+                Token::Gt => ">".to_string(),
+                Token::Lt => "<".to_string(),
+                Token::PlusEq => "+=".to_string(),
+                Token::MinusEq => "-=".to_string(),
+                Token::Eq => "=".to_string(),
+                Token::When => "when".to_string(),
+                _ => String::new(),
+            };
+            if !part.is_empty() {
+                parts.push(part);
+            }
+            self.advance();
+        }
+
+        self.skip_newlines();
+        Ok(parts.join(" "))
+    }
+
+    /// Parse `when <condition>` syntax for choice conditions.
+    /// This is an alternative to `{ condition }` that reads until end of line.
+    fn parse_when_condition(&mut self) -> Result<Condition, ParseError> {
+        let start_span = self.current_span();
+        self.consume(&Token::When, "Expected 'when'")?;
+
+        // Parse condition clauses until newline
+        let mut clauses = Vec::new();
+
+        while !self.check(&Token::Newline) && !self.is_at_end() {
+            clauses.push(self.parse_condition_clause()?);
+
+            if self.check(&Token::Comma) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        Ok(Condition {
+            clauses,
+            span: start_span.start..self.current_span().start,
+        })
+    }
+
+    /// Parse an inline Rhai block: `{ ... }`.
+    /// Handles nested braces by counting depth.
+    fn parse_rhai_block(&mut self) -> Result<RhaiBlock, ParseError> {
+        let start_span = self.current_span();
+        self.consume(&Token::LBrace, "Expected '{'")?;
+
+        // Track source position in original source
+        let source_start = self.current_span().start;
+        let mut depth = 1;
+
+        // Advance through tokens, tracking brace depth
+        while depth > 0 && !self.is_at_end() {
+            match self.current_token() {
+                Token::LBrace => {
+                    depth += 1;
+                    self.advance();
+                }
+                Token::RBrace => {
+                    depth -= 1;
+                    if depth > 0 {
+                        self.advance();
+                    }
+                }
+                _ => {
+                    self.advance();
+                }
+            }
+        }
+
+        let source_end = self.current_span().start;
+
+        if depth != 0 {
+            return Err(ParseError::UnexpectedToken {
+                expected: "closing '}'".to_string(),
+                found: "end of file".to_string(),
+                span: self.current_span(),
+            });
+        }
+
+        self.consume(&Token::RBrace, "Expected '}'")?;
+
+        // Extract the Rhai source from the original source string
+        let rhai_source = self.source[source_start..source_end].trim();
+
+        Ok(RhaiBlock {
+            source: SmolStr::new(rhai_source),
             span: start_span.start..self.current_span().start,
         })
     }
@@ -1149,5 +1355,122 @@ You went right.
         assert_eq!(scene.passages[0].name.as_str(), "intro");
         assert_eq!(scene.passages[1].name.as_str(), "left");
         assert_eq!(scene.passages[2].name.as_str(), "right");
+    }
+
+    #[test]
+    fn test_parse_when_condition() {
+        let source = r#"---
+id: when_test
+title: When Test
+tags: []
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+Test passage.
+
+* [Choice with when] when credits >= 100
+  -> END
+"#;
+
+        let result = parse(source, "test.scene");
+        assert!(result.is_ok(), "Parse failed: {:?}", result.err());
+
+        let scene = result.unwrap();
+        let passage = &scene.passages[0];
+
+        if let PassageContent::Choice(choice) = &passage.content[1] {
+            assert!(choice.condition.is_some());
+            let condition = choice.condition.as_ref().unwrap();
+            assert_eq!(condition.clauses.len(), 1);
+
+            if let ConditionClause::Resource(res_cond) = &condition.clauses[0] {
+                assert_eq!(res_cond.resource.as_str(), "credits");
+                assert_eq!(res_cond.operator, CompareOp::Ge);
+                assert_eq!(res_cond.value, 100);
+            } else {
+                panic!("Expected resource condition");
+            }
+        } else {
+            panic!("Expected choice");
+        }
+    }
+
+    #[test]
+    fn test_parse_script_effect() {
+        let source = r#"---
+id: script_test
+title: Script Test
+tags: []
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+Test passage.
+
+* [Do something]
+  ~ script: damage("hull", 10);
+  -> END
+"#;
+
+        let result = parse(source, "test.scene");
+        assert!(result.is_ok(), "Parse failed: {:?}", result.err());
+
+        let scene = result.unwrap();
+        let passage = &scene.passages[0];
+
+        if let PassageContent::Choice(choice) = &passage.content[1] {
+            assert_eq!(choice.effects.len(), 1);
+
+            if let Effect::Script(script) = &choice.effects[0] {
+                assert!(script.source.contains("damage"));
+            } else {
+                panic!("Expected script effect");
+            }
+        } else {
+            panic!("Expected choice");
+        }
+    }
+
+    #[test]
+    fn test_parse_inline_rhai_block() {
+        let source = r#"---
+id: rhai_block_test
+title: Rhai Block Test
+tags: []
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+{
+  if rng_float() < 0.5 {
+    damage("hull", 5);
+  }
+}
+
+Some text here.
+
+* [Continue]
+  -> END
+"#;
+
+        let result = parse(source, "test.scene");
+        assert!(result.is_ok(), "Parse failed: {:?}", result.err());
+
+        let scene = result.unwrap();
+        let passage = &scene.passages[0];
+
+        // Should have RhaiBlock, Prose, Choice in content
+        let has_rhai_block = passage.content.iter().any(|c| matches!(c, PassageContent::RhaiBlock(_)));
+        assert!(has_rhai_block, "Expected RhaiBlock in passage content");
     }
 }

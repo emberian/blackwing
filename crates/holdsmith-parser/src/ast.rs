@@ -62,6 +62,14 @@ pub struct Passage {
 pub enum PassageContent {
     Prose(Prose),
     Choice(Choice),
+    RhaiBlock(RhaiBlock),
+}
+
+/// Inline Rhai script block in passage content
+#[derive(Debug, Clone)]
+pub struct RhaiBlock {
+    pub source: SmolStr,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]
@@ -156,6 +164,13 @@ pub enum Effect {
     Chronicle(ChronicleEffect),
     Damage(DamageEffect),
     Reputation(ReputationEffect),
+    Script(ScriptEffect),
+}
+
+#[derive(Debug, Clone)]
+pub struct ScriptEffect {
+    pub source: SmolStr,
+    pub span: Span,
 }
 
 #[derive(Debug, Clone)]

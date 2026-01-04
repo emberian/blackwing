@@ -6,7 +6,7 @@ use engine_core::{
 };
 use holdsmith_parser::{
     self as ast, AssignOp, CompareOp, Condition, ConditionClause, FlagCondition, FlagValue,
-    Passage, SceneFile, TagSource,
+    Passage, PassageContent, SceneFile, TagSource,
 };
 use smol_str::SmolStr;
 
@@ -86,24 +86,49 @@ impl Compiler {
     }
 
     fn compile_passage(&self, passage: Passage) -> CompileResult<RuntimePassage> {
-        let text = passage
-            .content
-            .iter()
-            .filter_map(|c| match c {
-                ast::PassageContent::Prose(p) => Some(p.text.as_str()),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
+        let mut text_parts = Vec::new();
+        let mut choices = Vec::new();
+        let mut passage_effects = Vec::new();
 
-        let choices = passage
-            .content
-            .into_iter()
-            .filter_map(|c| match c {
-                ast::PassageContent::Choice(choice) => Some(self.compile_choice(choice)),
-                _ => None,
-            })
-            .collect::<CompileResult<Vec<_>>>()?;
+        for content in passage.content {
+            match content {
+                PassageContent::Prose(p) => {
+                    text_parts.push(p.text.to_string());
+                }
+                PassageContent::Choice(choice) => {
+                    choices.push(self.compile_choice(choice)?);
+                }
+                PassageContent::RhaiBlock(block) => {
+                    // Inline Rhai blocks become passage-level effects
+                    passage_effects.push(Effect::Script {
+                        source: block.source,
+                    });
+                }
+            }
+        }
+
+        let text = text_parts.join("\n");
+
+        // If there are passage-level effects and choices, prepend effects to first choice
+        // or create a synthetic "Continue" choice if no choices exist
+        if !passage_effects.is_empty() {
+            if choices.is_empty() {
+                // Create a synthetic continue choice with the effects
+                choices.push(RuntimeChoice {
+                    text: SmolStr::new("Continue"),
+                    requirements: Requirement::Always,
+                    effects: passage_effects,
+                    next: Navigation::End,
+                });
+            } else {
+                // Prepend effects to the first choice
+                let mut first_choice = choices.remove(0);
+                let mut combined_effects = passage_effects;
+                combined_effects.extend(first_choice.effects);
+                first_choice.effects = combined_effects;
+                choices.insert(0, first_choice);
+            }
+        }
 
         Ok(RuntimePassage {
             text: text.into(),
@@ -314,6 +339,9 @@ impl Compiler {
                 };
                 Effect::ModifyFactionReputation { faction, delta }
             }
+            ast::Effect::Script(script) => Effect::Script {
+                source: script.source.clone(),
+            },
         }
     }
 
