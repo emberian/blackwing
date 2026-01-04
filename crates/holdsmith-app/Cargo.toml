@@ -58,7 +58,9 @@ tracing-wasm = "0.2"
 
 # WASM-compatible random (required for dependencies that use getrandom)
 getrandom = { workspace = true }
-getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
+
+# WASM-compatible time (required for dependencies that use instant)
+instant = { workspace = true }
 
 # Direct dependency for diagnostics type (no parallel for WASM)
 holdsmith-analyzer = { path = "../holdsmith-analyzer", default-features = false }

@@ -10,6 +10,9 @@
 mod commands;
 mod state;
 mod view_models;
+mod wasm_vfs;
+
+pub use wasm_vfs::WasmMemoryFS;
 
 pub use commands::{Command, CommandResult};
 pub use state::{
@@ -22,7 +25,7 @@ pub use view_models::{
     SeverityViewModel, StateInspector,
 };
 
-use vfs::{MemoryFS, VfsPath};
+use vfs::VfsPath;
 
 /// The main controller for the Holdsmith IDE.
 pub struct Controller {
@@ -32,8 +35,10 @@ pub struct Controller {
 
 impl Controller {
     /// Create a new controller with an in-memory filesystem.
+    ///
+    /// Uses WasmMemoryFS which is compatible with both native and WASM targets.
     pub fn new() -> Self {
-        let fs: VfsPath = MemoryFS::new().into();
+        let fs: VfsPath = WasmMemoryFS::new().into();
         Self {
             state: AppState::new(fs),
             listeners: Vec::new(),

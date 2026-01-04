@@ -8,21 +8,14 @@
     <!-- App styles (copied by Trunk) -->
     <link data-trunk rel="css" href="style.css">
 
-    <!-- Copy JS folder -->
+    <!-- Copy bundled editor JS -->
+    <link data-trunk rel="copy-file" href="dist/js-bundle/editor.js">
+
+    <!-- Copy JS folder for graph.js -->
     <link data-trunk rel="copy-dir" href="js">
 
-    <!-- CodeMirror 6 via ESM CDN (bundled) -->
-    <script type="importmap">
-    {
-        "imports": {
-            "codemirror": "https://esm.sh/codemirror@6.0.1?bundle",
-            "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1?bundle",
-            "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.3?bundle",
-            "@codemirror/theme-one-dark": "https://esm.sh/@codemirror/theme-one-dark@6.1.2?bundle"
-        }
-    }
-    </script>
-    <script type="module" src="js/editor.js"></script>
+    <!-- Load CodeMirror editor bundle -->
+    <script type="module" src="editor.js"></script>
 
     <!-- Cytoscape.js -->
     <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>

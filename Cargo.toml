@@ -73,9 +73,10 @@ salsa = "0.25"
 
 # Filesystem
 vfs = "0.12"
-zip = { version = "2.1", default-features = false, features = ["deflate"] }
+zip = { version = "7", default-features = false, features = ["deflate"] }
 
 # WASM
+instant = { version = "0.1", features = ["wasm-bindgen"] }
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"

@@ -6,7 +6,7 @@ license.workspace = true
 authors.workspace = true
 
 [features]
-default = ["parallel"]
+default = []
 z3 = ["holdsmith-analyzer/z3"]
 parallel = ["holdsmith-analyzer/parallel"]
 
