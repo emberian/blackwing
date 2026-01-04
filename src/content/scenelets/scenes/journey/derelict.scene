@@ -1,0 +1,48 @@
+---
+id: journey_derelict
+title: Ghost Ship
+tags: [discovery, opportunity]
+context: journey
+weight: 9
+cooldown: 5
+---
+
+=== intro
+
+Sensors detect a drifting vessel. No power signature. No life signs. Just metal and silence, tumbling slowly through the void.
+
+Another casualty of the Silence, or something newer? Could be salvage. Could be a tomb. Could be a trap.
+
+* [Board and investigate]
+  ~ fuel -= 2
+  -> interior
+
+* [Pass it by]
+  ~ chronicle "Ghost Ship"
+    Passed a derelict without stopping. The void is full of the dead. We're not grave robbers. Usually.
+  -> END
+
+=== interior
+
+The ship is old—decades at least, maybe from the Silence itself. The crew died at their posts, preserved by vacuum. Whatever killed them wasn't violence—no blast marks, no breaches. They just... stopped.
+
+In the cargo bay, sealed crates still bear shipping labels. Someone was waiting for this delivery, three hundred years ago.
+
+* [Take the cargo]
+  ~ credits += 60
+  ~ chronicle "Salvage Rights"
+    Found valuables aboard a derelict. The dead have no use for cargo, and the living need to eat.
+  -> END
+
+* [Search for data—logs, charts, anything] { ship.sensor }
+  ~ credits += 25
+  ~ flag derelict_data
+  ~ chronicle "Derelict Data"
+    Downloaded the ship's logs before leaving. Their last moments, their final course. Maybe it leads somewhere.
+  -> END
+
+* [Leave them be]
+  ~ morale += 5
+  ~ chronicle "Respect for the Dead"
+    Left the derelict's cargo untouched. Some things should rest.
+  -> END

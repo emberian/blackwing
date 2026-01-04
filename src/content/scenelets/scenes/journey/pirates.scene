@@ -1,0 +1,36 @@
+---
+id: journey_pirates
+title: Hostile Contact
+tags: [danger, combat]
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+Proximity alarm. A ship emerges from behind an asteroid, weapons hot. Then another. Running dark until they were on top of you.
+
+"Cut your engines. Prepare to be boarded. Resist and we vent your hold to vacuum."
+
+Pirates. The Silence made a lot of them—honest haulers who lost everything and never found it again.
+
+* [Surrender and negotiate]
+  ~ credits -= 35
+  ~ chronicle "Pirate Toll"
+    Paid off pirates to avoid bloodshed. The void takes its cut, one way or another.
+  -> END
+
+* [Run for it]
+  ~ fuel -= 8
+  ~ damage hull 10
+  ~ chronicle "Narrow Escape"
+    Outran pirates, but not before they scored a few hits. The Holdfast earned her scars.
+  -> END
+
+* [Fight back] { ship.combat }
+  ~ credits += 50
+  ~ damage hull 5
+  ~ chronicle "Pirates Repelled"
+    Drove off pirates and salvaged what they left behind. The void respects those who fight.
+  -> END

@@ -1,0 +1,49 @@
+---
+id: port_contraband_offer
+title: Quiet Proposition
+tags: [smuggling, risk]
+context: port
+weight: 10
+cooldown: 4
+requires:
+  excludedFlags: [refused_smuggling_twice]
+---
+
+=== intro
+
+A message on your private channel. No sender ID. Just coordinates in the lower docks and a time.
+
+When you arrive, a figure in worn but expensive clothes is waiting. "Your ship. Your discretion. My cargo. Destination: Shadow Market. Payment on delivery. Interested?"
+
+* [Accept the job]
+  ~ addCard cargo_contraband
+  ~ flag smuggling_active
+  ~ chronicle "Shadow Work"
+    Accepted unmarked cargo for delivery to the Shadow Market. No questions asked. None answered.
+  -> END
+
+* [Ask what's in the containers]
+  -> clarification
+
+* [Refuse firmly]
+  ~ flag refused_smuggling
+  ~ chronicle "Principles"
+    Turned down contraband work. Some lines we don't cross.
+  -> END
+
+=== clarification
+
+The figure smiles thinly. "Contents are need-to-know, captain. Your job is transport, not inventory.
+
+"But since you ask—nothing that explodes, nothing that screams, nothing that the Collective would want. That's all you're getting."
+
+* [Good enough—accept]
+  ~ addCard cargo_contraband
+  ~ flag smuggling_active
+  ~ chronicle "Shadow Work"
+    Accepted unmarked cargo. "Nothing that explodes, nothing that screams." Cold comfort, but comfort enough.
+  -> END
+
+* [Not good enough—refuse]
+  ~ flag refused_smuggling_twice
+  -> END

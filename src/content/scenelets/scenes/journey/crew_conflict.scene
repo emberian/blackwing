@@ -1,0 +1,37 @@
+---
+id: journey_crew_conflict
+title: Tension in the Hold
+tags: [crew, social]
+context: journey
+weight: 12
+cooldown: 4
+requires:
+  minResources:
+    morale: 20
+  maxResources:
+    morale: 60
+---
+
+=== intro
+
+Voices raised in the mess. The long dark wears on everyone differently—cabin fever, old grudges, the weight of too much void and not enough sky.
+
+Two of your crew stand chest to chest, grievances spilling out that have been building for cycles.
+
+* [Intervene and mediate]
+  ~ morale += 10
+  ~ chronicle "Peace Restored"
+    A dispute among the crew. Words were had. Understanding reached. The hold feels lighter.
+  -> END
+
+* [Let them work it out]
+  ~ morale -= 5
+  ~ chronicle "Unresolved Tension"
+    The crew settled their dispute in their own way. Not cleanly.
+  -> END
+
+* [Confine both to quarters]
+  ~ morale -= 10
+  ~ chronicle "Discipline"
+    Order maintained through authority. The crew obeys, but resentment simmers.
+  -> END

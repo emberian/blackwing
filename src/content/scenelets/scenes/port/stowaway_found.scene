@@ -1,0 +1,37 @@
+---
+id: port_stowaway_found
+title: Unwelcome Guest
+tags: [crew, discovery, moral]
+context: port
+weight: 8
+cooldown: 5
+---
+
+=== intro
+
+During routine cargo inspection, you find something unexpected: a person, hidden among the crates. Young. Thin. Terrified.
+
+"Please." Their voice cracks. "I can work. I just... I can't go back. They'll kill me."
+
+Could be true. Could be a lie. Out here, it's hard to tell.
+
+* [Welcome them aboard]
+  ~ morale += 5
+  ~ supplies -= 2
+  ~ addCard crew_stowaway
+  ~ chronicle "New Crew"
+    Found a stowaway. Gave them a home. The hold grows fuller, the family larger.
+  -> END
+
+* [Turn them in to station security]
+  ~ credits += 15
+  ~ morale -= 8
+  ~ chronicle "Hard Choices"
+    Turned in a stowaway. There was a bounty. The crew hasn't spoken to us since.
+  -> END
+
+* [Give them credits and send them on their way]
+  ~ credits -= 20
+  ~ chronicle "Small Kindness"
+    Gave a stowaway enough to start over somewhere else. Sometimes that's all anyone needs.
+  -> END

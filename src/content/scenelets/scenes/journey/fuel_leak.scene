@@ -1,0 +1,29 @@
+---
+id: journey_fuel_leak
+title: Fuel Leak
+tags: [danger, ship]
+context: journey
+weight: 10
+cooldown: 4
+requires:
+  minResources:
+    fuel: 15
+---
+
+=== intro
+
+Warning: fuel reserves dropping faster than they should. Diagnostic scan reveals a micro-fracture in the fuel line—probably debris impact, too small to register at the time.
+
+You're losing fuel fast. Every minute costs you range.
+
+* [Emergency patch]
+  ~ fuel -= 6
+  ~ chronicle "Patched"
+    Fixed a fuel leak in transit. Lost some reserves, but the Holdfast keeps flying.
+  -> END
+
+* [Full repair protocol] { crew.engineering }
+  ~ fuel -= 2
+  ~ chronicle "Expert Repair"
+    The engineer fixed the leak with minimal fuel loss. Skilled hands save credits.
+  -> END

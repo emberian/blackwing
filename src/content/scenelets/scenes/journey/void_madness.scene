@@ -1,0 +1,37 @@
+---
+id: journey_void_madness
+title: The Long Dark
+tags: [crew, danger]
+context: journey
+weight: 12
+cooldown: 5
+requires:
+  maxResources:
+    morale: 35
+---
+
+=== intro
+
+One of the crew hasn't been sleeping. You find them in the observation deck at 0300, staring at the void. They don't respond when you speak.
+
+"It's watching," they whisper finally. "The dark between the stars. It's alive. It's been alive all along."
+
+Void-sickness. Happens to haulers who spend too long in the black.
+
+* [Get the medic] { crew.medical }
+  ~ morale += 5
+  ~ chronicle "Treatment"
+    Void-sickness caught early. The medic administered sedatives and light therapy. They'll recover.
+  -> END
+
+* [Talk them down yourself]
+  ~ morale -= 3
+  ~ chronicle "The Long Dark"
+    Talked a crew member through a void-sickness episode. Not easy. The dark gets to everyone eventually.
+  -> END
+
+* [Confine them for everyone's safety]
+  ~ morale -= 8
+  ~ chronicle "Confinement"
+    Confined a crew member suffering void-sickness. Necessary, but it doesn't feel good.
+  -> END

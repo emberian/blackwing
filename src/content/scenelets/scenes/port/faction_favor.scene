@@ -1,0 +1,30 @@
+---
+id: port_faction_favor
+title: Guild Representative
+tags: [faction, opportunity]
+context: port
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+A well-dressed figure intercepts you on the concourse. Guild insignia on their collar.
+
+"Captain. The Free Traders Guild has noticed your work. We appreciate independent operators who deliver on time and ask the right questions—which is to say, none at all.
+
+"Consider this a gesture of goodwill."
+
+They hand you a credit chip.
+
+* [Accept graciously]
+  ~ credits += 40
+  ~ chronicle "Guild Notice"
+    The Free Traders Guild has taken an interest in our work. Their credits spend the same as anyone's.
+  -> END
+
+* [Decline—no strings attached]
+  ~ morale += 5
+  ~ chronicle "Independence"
+    Refused a guild gift. We answer to no one but ourselves.
+  -> END

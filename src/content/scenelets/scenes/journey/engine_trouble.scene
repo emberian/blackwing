@@ -1,0 +1,33 @@
+---
+id: journey_engine_trouble
+title: Engine Trouble
+tags: [danger, ship]
+context: journey
+weight: 10
+cooldown: 4
+---
+
+=== intro
+
+The jump drive shudders, then coughs, then screams. Warning lights cascade across the console. The Holdfast drops out of transit early, dead in space.
+
+Diagnostic: primary drive coil failure. Without repairs, you're not going anywhere.
+
+* [Emergency repairs with spare parts]
+  ~ credits -= 40
+  ~ chronicle "Emergency Repairs"
+    Burned through spare parts fixing the jump drive. Expensive, but we're flying again.
+  -> END
+
+* [Let the engineer work their magic] { crew.engineering }
+  ~ credits -= 15
+  ~ chronicle "Field Repairs"
+    The engineer coaxed the jump drive back to life with minimal parts. Skill saves credits.
+  -> END
+
+* [Broadcast a distress signal]
+  ~ credits -= 60
+  ~ morale -= 5
+  ~ chronicle "Rescue Required"
+    Had to call for help when the drive failed. The rescue wasn't cheap, and the crew feels the sting.
+  -> END

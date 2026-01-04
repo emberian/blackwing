@@ -1,0 +1,38 @@
+---
+id: port_crew_request
+title: Crew Request
+tags: [crew, social]
+context: port
+weight: 10
+cooldown: 4
+requires:
+  minResources:
+    morale: 40
+    credits: 30
+---
+
+=== intro
+
+One of the crew approaches, hesitant. "Captain. We've been running hard. The crew's been talking. Not complaining—just... it's been a while since we had shore leave. Real shore leave."
+
+They're not wrong. The void wears people down. A little rest might do everyone good.
+
+* [Grant shore leave (20 credits)]
+  ~ credits -= 20
+  ~ morale += 15
+  ~ chronicle "Shore Leave"
+    Gave the crew shore leave. Credits spent on drinks and diversions. Morale returned with interest.
+  -> END
+
+* [A meal, at least (10 credits)]
+  ~ credits -= 10
+  ~ morale += 8
+  ~ chronicle "Crew Meal"
+    Treated the crew to a real meal. Not shore leave, but appreciated nonetheless.
+  -> END
+
+* [We can't afford to stop]
+  ~ morale -= 5
+  ~ chronicle "No Rest"
+    Denied the crew's request for shore leave. The work continues. The void doesn't wait.
+  -> END

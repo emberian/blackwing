@@ -1,0 +1,63 @@
+---
+id: port_desperate_seller
+title: Desperate Offer
+tags: [trade, opportunity]
+context: port
+weight: 14
+cooldown: 3
+requires:
+  minResources:
+    credits: 40
+---
+
+=== intro
+
+A figure approaches at the docking bay. Eyes darting. Voice low.
+
+"I have cargo. Good cargo. Need to move it fast—my ship's impounded and I'm leaving on the next shuttle. Half the market rate. No questions."
+
+They're nervous, but the crates look legitimate.
+
+* [Accept the deal]
+  ~ credits -= 25
+  ~ addCard cargo_processed_metals
+  ~ addCard cargo_processed_metals
+  ~ chronicle "Opportunistic Purchase"
+    Acquired cargo at well below market rate. The seller's desperation was our opportunity.
+  -> END
+
+* [Ask what they're running from]
+  -> backstory
+
+* [Decline—too risky]
+  ~ chronicle "Caution Prevails"
+    Turned down a suspicious deal. Better safe than sorry.
+  -> END
+
+=== backstory
+
+Their composure cracks. "Debt collectors. Consortium-backed. The kind that take fingers."
+
+A glance over their shoulder. "Please. I just need to be gone."
+
+* [Buy the cargo and offer passage]
+  ~ credits -= 25
+  ~ supplies -= 3
+  ~ morale += 5
+  ~ addCard cargo_processed_metals
+  ~ addCard cargo_processed_metals
+  ~ addCard crew_stowaway
+  ~ chronicle "Mercy in the Margins"
+    Helped someone escape their debts. Another soul joins the hold. The Consortium won't be pleased.
+  -> END
+
+* [Just buy the cargo]
+  ~ credits -= 25
+  ~ addCard cargo_processed_metals
+  ~ addCard cargo_processed_metals
+  ~ chronicle "Business Only"
+    Took the deal. Left the seller to their fate. Credits don't have memories.
+  -> END
+
+* [Walk away]
+  -> END

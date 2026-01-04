@@ -1,0 +1,23 @@
+---
+id: port_market_opportunity
+title: Market Tip
+tags: [trade, opportunity]
+context: port
+weight: 12
+cooldown: 4
+---
+
+=== intro
+
+A dock worker catches your eye while you're checking manifests. "Hey, captain. Word is Frontier Station's medical supplies are running critically low. Plague or something. Just saying—if someone had supplies to sell..."
+
+They shrug and walk away. Could be gossip. Could be an opportunity.
+
+* [Note the tip]
+  ~ flag frontier_med_shortage
+  ~ chronicle "Market Intelligence"
+    Heard a tip about medical supply shortages at Frontier Station. Could be profitable. Could save lives. Both, maybe.
+  -> END
+
+* [Ignore dock gossip]
+  -> END

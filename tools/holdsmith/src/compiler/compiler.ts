@@ -313,21 +313,53 @@ function compileResourceEffect(
   }
 }
 
-export function emitTypeScript(scenelet: CompiledScenelet): string {
+export function emitTypeScript(scenelet: CompiledScenelet, importPath: string = '../../../core/types.js'): string {
   const lines: string[] = [];
   
-  lines.push(`import type { Scenelet, SceneletId } from '../../core/types.js';`);
+  const hasCards = hasAddCards(scenelet);
+  
+  const types = hasCards 
+    ? 'Scenelet, SceneletId, CardDefId'
+    : 'Scenelet, SceneletId';
+  
+  lines.push(`import type { ${types} } from '${importPath}';`);
   lines.push('');
-  lines.push(`export const ${sanitizeIdentifier(scenelet.id)}: Scenelet = ${jsonToTypeScript(scenelet)};`);
+  lines.push('const id = (s: string): SceneletId => s as SceneletId;');
+  if (hasCards) {
+    lines.push('const cardId = (s: string): CardDefId => s as CardDefId;');
+  }
+  lines.push('');
+  lines.push(`export const ${sanitizeIdentifier(scenelet.id)}: Scenelet = ${jsonToTypeScript(scenelet, 0, {})};`);
   
   return lines.join('\n');
+}
+
+function hasAddCards(obj: unknown): boolean {
+  if (obj === null || obj === undefined) return false;
+  if (typeof obj !== 'object') return false;
+  
+  if (Array.isArray(obj)) {
+    return obj.some(item => hasAddCards(item));
+  }
+  
+  const record = obj as Record<string, unknown>;
+  if ('addCards' in record && Array.isArray(record.addCards) && record.addCards.length > 0) {
+    return true;
+  }
+  
+  return Object.values(record).some(value => hasAddCards(value));
 }
 
 function sanitizeIdentifier(id: string): string {
   return id.replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
-function jsonToTypeScript(obj: unknown, indent: number = 0): string {
+interface JsonContext {
+  inIdField?: boolean;
+  inAddCards?: boolean;
+}
+
+function jsonToTypeScript(obj: unknown, indent: number = 0, ctx: JsonContext = {}): string {
   const pad = '  '.repeat(indent);
   const padInner = '  '.repeat(indent + 1);
   
@@ -336,6 +368,12 @@ function jsonToTypeScript(obj: unknown, indent: number = 0): string {
   }
   
   if (typeof obj === 'string') {
+    if (ctx.inIdField) {
+      return `id(${JSON.stringify(obj)})`;
+    }
+    if (ctx.inAddCards) {
+      return `cardId(${JSON.stringify(obj)})`;
+    }
     if (obj.includes('\n')) {
       return '`' + obj.replace(/`/g, '\\`').replace(/\$/g, '\\$') + '`';
     }
@@ -348,10 +386,13 @@ function jsonToTypeScript(obj: unknown, indent: number = 0): string {
   
   if (Array.isArray(obj)) {
     if (obj.length === 0) return '[]';
+    if (ctx.inAddCards && obj.every(item => typeof item === 'string')) {
+      return '[' + obj.map(s => `cardId(${JSON.stringify(s)})`).join(', ') + ']';
+    }
     if (obj.every(item => typeof item === 'string')) {
       return '[' + obj.map(s => JSON.stringify(s)).join(', ') + ']';
     }
-    const items = obj.map(item => jsonToTypeScript(item, indent + 1));
+    const items = obj.map(item => jsonToTypeScript(item, indent + 1, ctx));
     return '[\n' + padInner + items.join(',\n' + padInner) + ',\n' + pad + ']';
   }
   
@@ -361,7 +402,14 @@ function jsonToTypeScript(obj: unknown, indent: number = 0): string {
     
     const props = entries.map(([key, value]) => {
       const safeKey = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) ? key : JSON.stringify(key);
-      return `${safeKey}: ${jsonToTypeScript(value, indent + 1)}`;
+      const newCtx: JsonContext = {};
+      if (key === 'id' && typeof value === 'string') {
+        newCtx.inIdField = true;
+      }
+      if (key === 'addCards') {
+        newCtx.inAddCards = true;
+      }
+      return `${safeKey}: ${jsonToTypeScript(value, indent + 1, newCtx)}`;
     });
     
     return '{\n' + padInner + props.join(',\n' + padInner) + ',\n' + pad + '}';

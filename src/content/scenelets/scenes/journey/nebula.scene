@@ -1,0 +1,23 @@
+---
+id: journey_nebula
+title: Nebula Crossing
+tags: [navigation, beauty]
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+The jump takes you through a nebula—vast clouds of luminescent gas stretching across light-years, painting the void in colors that have no names.
+
+The crew gathers at the viewports. Even the hardest hauler stops to watch. The universe, for all its dangers, is beautiful. The Priors saw this too, once. Maybe they understood it better than we do.
+
+* [Take a moment to appreciate it]
+  ~ morale += 10
+  ~ chronicle "Beauty in the Void"
+    Passed through a nebula. For a moment, we remembered why we fly. Not just for credits. For this.
+  -> END
+
+* [Keep moving—schedule to keep]
+  -> END

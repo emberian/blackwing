@@ -1,0 +1,49 @@
+---
+id: port_prior_collector
+title: The Collector
+tags: [prior, opportunity, mystery]
+context: port
+weight: 8
+cooldown: 6
+requires:
+  shipTags: [ancient]
+---
+
+=== intro
+
+A message arrives, encrypted: "I know what you carry. Meet me at the Vermillion Lounge if you want to know what it means."
+
+The Vermillion is upscale—silk and synth-wood, drinks that cost a day's wages. A figure in the corner booth waves you over. Old. Wealthy. Eyes too bright.
+
+"Prior artifacts," they whisper. "I've been collecting since before the Silence. I know things the Collective would kill for."
+
+* [Listen to what they know]
+  ~ flag met_collector
+  ~ chronicle "The Collector"
+    Met a Prior artifact collector. What they told us... we're still processing.
+  -> revelation
+
+* [Leave—this feels like a trap]
+  ~ chronicle "Declined Meeting"
+    Turned down a meeting with someone who claimed to know about Prior artifacts. Trust is expensive.
+  -> END
+
+=== revelation
+
+"The Silence wasn't a failure," they say, leaning close. "It was a shutdown. Someone—something—turned the Beacons off. All at once. Across the entire galaxy."
+
+They tap the table. "The question isn't what happened. It's why. And whether it will happen again."
+
+They slide a data chip across to you. "Routes to places the charts don't show. Worth more than credits."
+
+* [Take the chip]
+  ~ flag collector_data
+  ~ chronicle "Hidden Routes"
+    Received coordinates from a Prior collector. Places the charts don't show. Whether we'll use them remains to be seen.
+  -> END
+
+* [Refuse—some knowledge is dangerous]
+  ~ morale += 5
+  ~ chronicle "Dangerous Knowledge"
+    Refused data from a Prior collector. Some doors are better left closed.
+  -> END

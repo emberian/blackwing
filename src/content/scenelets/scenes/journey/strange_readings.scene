@@ -1,0 +1,35 @@
+---
+id: journey_strange_readings
+title: Anomalous Readings
+tags: [mystery, prior]
+context: journey
+weight: 8
+cooldown: 6
+requires:
+  shipTags: [sensor]
+---
+
+=== intro
+
+The sensors are picking up something that shouldn't exist—readings that don't match any known phenomenon. Gravity fluctuations. Radiation spectra that physics says is impossible. A point in space that seems to... fold.
+
+The Prior tech on the ship is reacting. Instruments calibrated to their artifacts are going haywire.
+
+* [Investigate cautiously]
+  ~ fuel -= 3
+  ~ flag anomaly_investigated
+  ~ chronicle "Anomaly Encountered"
+    Investigated an anomalous phenomenon. The readings didn't make sense before. They make less sense now.
+  -> END
+
+* [Full sensor sweep, then leave]
+  ~ flag anomaly_logged
+  ~ chronicle "Anomaly Logged"
+    Recorded anomalous readings for later analysis. The Science Collective pays well for data like this.
+  -> END
+
+* [Get away from here]
+  ~ fuel -= 2
+  ~ chronicle "Anomaly Avoided"
+    Detected something wrong with space itself. Burned fuel to get away fast. Some things are better left unexplored.
+  -> END

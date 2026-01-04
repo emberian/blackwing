@@ -53,9 +53,14 @@ program
           mkdirSync(outDir, { recursive: true });
         }
         
+        const relDir = dirname(relPath);
+        const subdirCount = relDir === '.' ? 0 : relDir.split('/').filter(p => p).length;
+        const depth = 3 + subdirCount;
+        const importPath = '../'.repeat(depth) + 'core/types.js';
+        
         const output = options.json 
           ? JSON.stringify(result.scenelet, null, 2)
-          : emitTypeScript(result.scenelet);
+          : emitTypeScript(result.scenelet, importPath);
         
         writeFileSync(outPath, output);
         console.log(`  Compiled: ${relPath} -> ${relative('.', outPath)}`);
@@ -174,14 +179,21 @@ function findSceneFiles(dir: string): string[] {
 function generateIndex(compiled: Array<{ file: string; id: string }>): string {
   const lines: string[] = [];
   
+  lines.push('import type { Scenelet } from \'../../../core/types.js\';');
+  
   for (const { file, id } of compiled) {
     const importPath = './' + file.replace(/\.scene$/, '.js').replace(/\\/g, '/');
     const varName = sanitizeIdentifier(id);
-    lines.push(`export { ${varName} } from '${importPath}';`);
+    lines.push(`import { ${varName} } from '${importPath}';`);
   }
   
   lines.push('');
-  lines.push('import type { Scenelet } from \'../../core/types.js\';');
+  
+  for (const { id } of compiled) {
+    const varName = sanitizeIdentifier(id);
+    lines.push(`export { ${varName} };`);
+  }
+  
   lines.push('');
   
   const imports = compiled.map(c => sanitizeIdentifier(c.id));

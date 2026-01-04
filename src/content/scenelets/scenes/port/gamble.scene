@@ -1,0 +1,48 @@
+---
+id: port_gamble
+title: High Stakes
+tags: [risk, opportunity]
+context: port
+weight: 8
+cooldown: 4
+requires:
+  minResources:
+    credits: 40
+---
+
+=== intro
+
+In a dim corner of the station, a card game is in progress. The players look up as you approach—haulers, mostly, killing time between jumps.
+
+"Fresh blood. Care to test your luck, captain? Forty credits to play."
+
+* [Sit down and play]
+  ~ credits -= 40
+  -> cards
+
+* [Walk away]
+  -> END
+
+=== cards
+
+The cards fly. Credits change hands. You play cautiously at first, then with more confidence as you read the table. The other players are good, but you're better. Or luckier. Hard to tell sometimes.
+
+Final hand. Big pot. Your cards are decent. Theirs could be anything.
+
+* [Go all in]
+  ~ credits += 70
+  ~ chronicle "Lucky Night"
+    Won big at cards. The void provides, sometimes.
+  -> END
+
+* [Fold and keep what you've won]
+  ~ credits += 20
+  ~ chronicle "Modest Winnings"
+    Played cards. Won a little. Quit while ahead. Wisdom over greed.
+  -> END
+
+* [Bluff hard]
+  ~ credits -= 25
+  ~ chronicle "Bad Bluff"
+    Lost at cards. They called the bluff. Next time, better cards.
+  -> END

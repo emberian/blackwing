@@ -1,0 +1,50 @@
+---
+id: port_consortium_offer
+title: Consortium Interest
+tags: [faction, opportunity, risk]
+context: port
+weight: 8
+cooldown: 5
+requires:
+  minResources:
+    credits: 20
+---
+
+=== intro
+
+A Consortium representative finds you at the docking bay. Corporate suit, corporate smile, corporate eyes that calculate everything they see.
+
+"We've been watching your operation. Small but efficient. We'd like to offer you a retainer—guaranteed contracts, priority docking, access to Consortium facilities. In exchange for... flexibility. When we need cargo moved quietly, you move it. No questions."
+
+* [Accept the retainer (50 credits now)]
+  ~ credits += 50
+  ~ flag consortium_retainer
+  ~ chronicle "Consortium Contract"
+    Accepted a retainer from the Industrial Consortium. Steady work. Steady pay. Steady obligations.
+  -> END
+
+* [Decline—we stay independent]
+  ~ chronicle "Independence"
+    Turned down a Consortium retainer. The Holdfast answers to no corporate master.
+  -> END
+
+* [Ask what "quietly" means]
+  -> clarification
+
+=== clarification
+
+The smile doesn't waver. "Nothing illegal. Nothing dangerous. Just... discrete. Materials that competitors would rather we didn't have. Personnel who prefer not to travel publicly. The occasional item that customs might ask inconvenient questions about."
+
+"Standard Guild practice, really. We just pay better."
+
+* [Accept anyway]
+  ~ credits += 50
+  ~ flag consortium_retainer
+  ~ chronicle "Consortium Contract"
+    Accepted a Consortium retainer despite the implications. Credits are credits.
+  -> END
+
+* [Decline—that's smuggling with extra steps]
+  ~ chronicle "Declined Offer"
+    Turned down the Consortium's "discrete" work. Some lines we don't cross, even for good pay.
+  -> END
