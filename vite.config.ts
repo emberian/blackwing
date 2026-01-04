@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.svg'],
       manifest: {
-        name: 'Cargo Hold',
-        short_name: 'Cargo Hold',
+        name: 'Blackwing',
+        short_name: 'Blackwing',
         description: 'A mobile-first narrative idle trading game with deck-building mechanics',
         theme_color: '#0a0a0f',
         background_color: '#0a0a0f',
