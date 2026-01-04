@@ -1,7 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use engine_core::{Effect, GameState, TagCategoryId, TagId, TagProvider, Value};
-use parking_lot::Mutex;
 use rhai::{Dynamic, Engine, ImmutableString, Scope, AST};
 use smol_str::SmolStr;
 
@@ -39,15 +38,15 @@ impl SharedState {
     fn into_result(self) -> ScriptResult {
         ScriptResult {
             effects: Arc::try_unwrap(self.effects)
-                .map(|m| m.into_inner())
-                .unwrap_or_else(|arc| arc.lock().clone()),
+                .map(|m| m.into_inner().unwrap())
+                .unwrap_or_else(|arc| arc.lock().unwrap().clone()),
             goto: Arc::try_unwrap(self.goto)
-                .map(|m| m.into_inner())
-                .unwrap_or_else(|arc| arc.lock().clone())
+                .map(|m| m.into_inner().unwrap())
+                .unwrap_or_else(|arc| arc.lock().unwrap().clone())
                 .map(SmolStr::new),
             rng_state: Arc::try_unwrap(self.rng_state)
-                .map(|m| m.into_inner())
-                .unwrap_or_else(|arc| *arc.lock()),
+                .map(|m| m.into_inner().unwrap())
+                .unwrap_or_else(|arc| *arc.lock().unwrap()),
         }
     }
 }
@@ -336,7 +335,7 @@ impl ScriptExecutor {
         // === RNG Functions ===
         let rng = shared.rng_state.clone();
         engine.register_fn("rng_float", move || -> f64 {
-            let mut state = rng.lock();
+            let mut state = rng.lock().unwrap();
             *state = state
                 .wrapping_mul(6364136223846793005)
                 .wrapping_add(1442695040888963407);
@@ -348,7 +347,7 @@ impl ScriptExecutor {
             if min >= max {
                 return min;
             }
-            let mut state = rng.lock();
+            let mut state = rng.lock().unwrap();
             *state = state
                 .wrapping_mul(6364136223846793005)
                 .wrapping_add(1442695040888963407);
@@ -361,6 +360,7 @@ impl ScriptExecutor {
         engine.register_fn("damage", move |resource: ImmutableString, amount: i64| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::damage(resource.as_str(), amount));
         });
 
@@ -368,6 +368,7 @@ impl ScriptExecutor {
         engine.register_fn("modify_resource", move |resource: ImmutableString, delta: i64| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::modify_resource(resource.as_str(), delta));
         });
 
@@ -375,18 +376,20 @@ impl ScriptExecutor {
         engine.register_fn("set_resource", move |resource: ImmutableString, value: i64| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::set_resource(resource.as_str(), value));
         });
 
         let effects = shared.effects.clone();
         engine.register_fn("add_card", move |card_id: ImmutableString| {
-            effects.lock().push(Effect::add_card(card_id.as_str()));
+            effects.lock().unwrap().push(Effect::add_card(card_id.as_str()));
         });
 
         let effects = shared.effects.clone();
         engine.register_fn("remove_cards", move |pattern: ImmutableString| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::remove_cards(pattern.as_str()));
         });
 
@@ -394,6 +397,7 @@ impl ScriptExecutor {
         engine.register_fn("chronicle", move |title: ImmutableString, text: ImmutableString| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::chronicle(title.as_str(), text.as_str()));
         });
 
@@ -401,6 +405,7 @@ impl ScriptExecutor {
         engine.register_fn("modify_reputation", move |faction: ImmutableString, delta: i64| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::modify_reputation(faction.as_str(), delta));
         });
 
@@ -409,6 +414,7 @@ impl ScriptExecutor {
         engine.register_fn("set_flag", move |name: ImmutableString, value: bool| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::set_flag(name.as_str(), Value::Bool(value)));
         });
 
@@ -416,12 +422,13 @@ impl ScriptExecutor {
         engine.register_fn("set_flag_int", move |name: ImmutableString, value: i64| {
             effects
                 .lock()
+                .unwrap()
                 .push(Effect::set_flag(name.as_str(), Value::Int(value)));
         });
 
         let effects = shared.effects.clone();
         engine.register_fn("set_flag_str", move |name: ImmutableString, value: ImmutableString| {
-            effects.lock().push(Effect::set_flag(
+            effects.lock().unwrap().push(Effect::set_flag(
                 name.as_str(),
                 Value::String(value.as_str().into()),
             ));
@@ -431,7 +438,7 @@ impl ScriptExecutor {
         // Note: "goto" is a reserved keyword in Rhai, so we use "jump_to"
         let goto = shared.goto.clone();
         engine.register_fn("jump_to", move |passage: ImmutableString| {
-            *goto.lock() = Some(passage.to_string());
+            *goto.lock().unwrap() = Some(passage.to_string());
         });
 
         engine

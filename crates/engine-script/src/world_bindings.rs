@@ -26,11 +26,10 @@
 //! let visited = world.flag("visited_town");
 //! ```
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use engine_primitives::Value;
 use engine_world::WorldState;
-use parking_lot::Mutex;
 use rhai::{Dynamic, Engine, ImmutableString};
 use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
@@ -119,12 +118,12 @@ impl WorldScriptState {
 
     pub fn into_effects(self) -> Vec<WorldEffect> {
         Arc::try_unwrap(self.effects)
-            .map(|m| m.into_inner())
-            .unwrap_or_else(|arc| arc.lock().clone())
+            .map(|m| m.into_inner().unwrap())
+            .unwrap_or_else(|arc| arc.lock().unwrap().clone())
     }
 
     pub fn rng_state(&self) -> u64 {
-        *self.rng_state.lock()
+        *self.rng_state.lock().unwrap()
     }
 }
 
@@ -313,7 +312,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("set_resource", move |name: ImmutableString, value: i64| {
-        st.effects.lock().push(WorldEffect::SetResource {
+        st.effects.lock().unwrap().push(WorldEffect::SetResource {
             resource: SmolStr::new(name.as_str()),
             value,
         });
@@ -321,7 +320,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("modify_resource", move |name: ImmutableString, delta: i64| {
-        st.effects.lock().push(WorldEffect::ModifyResource {
+        st.effects.lock().unwrap().push(WorldEffect::ModifyResource {
             resource: SmolStr::new(name.as_str()),
             delta,
         });
@@ -344,7 +343,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("set_flag", move |name: ImmutableString, value: bool| {
-        st.effects.lock().push(WorldEffect::SetFlag {
+        st.effects.lock().unwrap().push(WorldEffect::SetFlag {
             flag: SmolStr::new(name.as_str()),
             value: Value::Bool(value),
         });
@@ -352,7 +351,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("set_flag_int", move |name: ImmutableString, value: i64| {
-        st.effects.lock().push(WorldEffect::SetFlag {
+        st.effects.lock().unwrap().push(WorldEffect::SetFlag {
             flag: SmolStr::new(name.as_str()),
             value: Value::Int(value),
         });
@@ -362,7 +361,7 @@ pub fn register_world_bindings(
     engine.register_fn(
         "set_flag_str",
         move |name: ImmutableString, value: ImmutableString| {
-            st.effects.lock().push(WorldEffect::SetFlag {
+            st.effects.lock().unwrap().push(WorldEffect::SetFlag {
                 flag: SmolStr::new(name.as_str()),
                 value: Value::String(SmolStr::new(value.as_str())),
             });
@@ -371,7 +370,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("clear_flag", move |name: ImmutableString| {
-        st.effects.lock().push(WorldEffect::ClearFlag {
+        st.effects.lock().unwrap().push(WorldEffect::ClearFlag {
             flag: SmolStr::new(name.as_str()),
         });
     });
@@ -382,7 +381,7 @@ pub fn register_world_bindings(
     engine.register_fn(
         "spawn_entity",
         move |kind: ImmutableString, id: ImmutableString| {
-            st.effects.lock().push(WorldEffect::SpawnEntity {
+            st.effects.lock().unwrap().push(WorldEffect::SpawnEntity {
                 kind: SmolStr::new(kind.as_str()),
                 id: SmolStr::new(id.as_str()),
             });
@@ -394,7 +393,7 @@ pub fn register_world_bindings(
         "despawn_entity",
         move |qualified_id: ImmutableString| {
             if let Some((kind, id)) = qualified_id.split_once(':') {
-                st.effects.lock().push(WorldEffect::DespawnEntity {
+                st.effects.lock().unwrap().push(WorldEffect::DespawnEntity {
                     kind: SmolStr::new(kind),
                     id: SmolStr::new(id),
                 });
@@ -407,7 +406,7 @@ pub fn register_world_bindings(
         "set_component",
         move |qualified_id: ImmutableString, component: ImmutableString, value: Dynamic| {
             if let Some((kind, id)) = qualified_id.split_once(':') {
-                st.effects.lock().push(WorldEffect::SetComponent {
+                st.effects.lock().unwrap().push(WorldEffect::SetComponent {
                     kind: SmolStr::new(kind),
                     id: SmolStr::new(id),
                     component: SmolStr::new(component.as_str()),
@@ -422,7 +421,7 @@ pub fn register_world_bindings(
         "remove_component",
         move |qualified_id: ImmutableString, component: ImmutableString| {
             if let Some((kind, id)) = qualified_id.split_once(':') {
-                st.effects.lock().push(WorldEffect::RemoveComponent {
+                st.effects.lock().unwrap().push(WorldEffect::RemoveComponent {
                     kind: SmolStr::new(kind),
                     id: SmolStr::new(id),
                     component: SmolStr::new(component.as_str()),
@@ -436,7 +435,7 @@ pub fn register_world_bindings(
         "add_tag",
         move |qualified_id: ImmutableString, tag: ImmutableString| {
             if let Some((kind, id)) = qualified_id.split_once(':') {
-                st.effects.lock().push(WorldEffect::AddTag {
+                st.effects.lock().unwrap().push(WorldEffect::AddTag {
                     kind: SmolStr::new(kind),
                     id: SmolStr::new(id),
                     tag: SmolStr::new(tag.as_str()),
@@ -450,7 +449,7 @@ pub fn register_world_bindings(
         "remove_tag",
         move |qualified_id: ImmutableString, tag: ImmutableString| {
             if let Some((kind, id)) = qualified_id.split_once(':') {
-                st.effects.lock().push(WorldEffect::RemoveTag {
+                st.effects.lock().unwrap().push(WorldEffect::RemoveTag {
                     kind: SmolStr::new(kind),
                     id: SmolStr::new(id),
                     tag: SmolStr::new(tag.as_str()),
@@ -465,7 +464,7 @@ pub fn register_world_bindings(
     engine.register_fn(
         "push_scope",
         move |kind: ImmutableString, id: ImmutableString| {
-            st.effects.lock().push(WorldEffect::PushScope {
+            st.effects.lock().unwrap().push(WorldEffect::PushScope {
                 kind: SmolStr::new(kind.as_str()),
                 id: SmolStr::new(id.as_str()),
             });
@@ -474,7 +473,7 @@ pub fn register_world_bindings(
 
     let st = state.clone();
     engine.register_fn("pop_scope", move || {
-        st.effects.lock().push(WorldEffect::PopScope);
+        st.effects.lock().unwrap().push(WorldEffect::PopScope);
     });
 
     // === Chronicle ===
@@ -483,7 +482,7 @@ pub fn register_world_bindings(
     engine.register_fn(
         "chronicle",
         move |title: ImmutableString, description: ImmutableString| {
-            st.effects.lock().push(WorldEffect::Chronicle {
+            st.effects.lock().unwrap().push(WorldEffect::Chronicle {
                 title: SmolStr::new(title.as_str()),
                 description: SmolStr::new(description.as_str()),
             });
@@ -494,7 +493,7 @@ pub fn register_world_bindings(
 
     let rng = state.rng_state.clone();
     engine.register_fn("rng_float", move || -> f64 {
-        let mut st = rng.lock();
+        let mut st = rng.lock().unwrap();
         *st = st
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
@@ -506,7 +505,7 @@ pub fn register_world_bindings(
         if min >= max {
             return min;
         }
-        let mut st = rng.lock();
+        let mut st = rng.lock().unwrap();
         *st = st
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
@@ -516,7 +515,7 @@ pub fn register_world_bindings(
 
     let rng = state.rng_state.clone();
     engine.register_fn("rng_chance", move |probability: f64| -> bool {
-        let mut st = rng.lock();
+        let mut st = rng.lock().unwrap();
         *st = st
             .wrapping_mul(6364136223846793005)
             .wrapping_add(1442695040888963407);
