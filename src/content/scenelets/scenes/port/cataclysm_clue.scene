@@ -1,0 +1,86 @@
+---
+id: port_cataclysm_clue
+title: Fragment of History
+tags: [mystery, cataclysm]
+context: port
+weight: 5
+cooldown: 10
+---
+
+=== intro
+
+A data broker makes contact—not Hollow Circuit, just a merchant 
+dealing in information instead of cargo.
+
+"I have something you might find interesting. Pre-Cataclysm 
+data. Partial, corrupted, but... significant. A recording 
+from the final hours."
+
+They transmit a sample. Static, mostly. But beneath the noise, 
+voices. Human voices.
+
+"Fifty credits for the full file."
+
+* [Pay for the data]
+  ~ credits -= 50
+  -> data
+
+* [Try to negotiate]
+  -> negotiate
+
+* [Decline]
+  ~ chronicle "Fragment of History"
+    Someone offered Cataclysm-era data. Passed on it.
+  -> END
+
+=== negotiate
+
+"Twenty-five. It's corrupted anyway—you said so yourself."
+
+"It's irreplaceable. Forty."
+
+* [Pay the forty]
+  ~ credits -= 40
+  -> data
+
+* [Decline]
+  ~ chronicle "Fragment of History"
+    Someone offered Cataclysm-era data. Couldn't agree on price.
+  -> END
+
+=== data
+
+The file transfers. You process it immediately, stripping away 
+layers of corruption, reconstructing what you can.
+
+It's a ship's log. Human vessel. The timestamp is June 6, 2633—
+Day One of the Cataclysm.
+
+"...happening everywhere. Earth went dark first. Then the 
+colonies, one by one. We're trying to reach the Margin, but 
+communications are..."
+
+Static. Then, clearer: "They're not dead. I don't think 
+they're dead. I think they're—"
+
+The recording ends.
+
+* [Archive it]
+  ~ flag cataclysm_fragment
+  ~ chronicle "Fragment of History"
+    Acquired a recording from Day One of the Cataclysm. Humans speaking in their final hours. They said: "I don't think they're dead."
+  -> END
+
+* [Share with the Remnant]
+  ~ flag cataclysm_fragment
+  ~ reputation remnant += 15
+  ~ chronicle "Fragment of History"
+    Found Cataclysm-era data. Shared it with the Remnant curators.
+  -> END
+
+* [Sell it to the Hollow Circuit] { flag hollow_contact }
+  ~ flag cataclysm_fragment
+  ~ credits += 100
+  ~ chronicle "Fragment of History"
+    Found Cataclysm-era data. The Hollow Circuit paid well for it.
+  -> END

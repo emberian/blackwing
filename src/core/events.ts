@@ -182,10 +182,31 @@ export function applyEffects(
     let collection = [...newState.cards.collection];
     let deck = [...newState.cards.deck];
     
-    for (const instanceId of effects.removeCards) {
-      delete instances[instanceId];
-      collection = collection.filter(id => id !== instanceId);
-      deck = deck.filter(id => id !== instanceId);
+    for (const pattern of effects.removeCards) {
+      const toRemove: string[] = [];
+      
+      if (pattern.endsWith('*')) {
+        const prefix = pattern.slice(0, -1);
+        for (const instanceId of collection) {
+          const instance = instances[instanceId];
+          if (instance && String(instance.cardDefId).startsWith(prefix)) {
+            toRemove.push(instanceId);
+          }
+        }
+      } else {
+        for (const instanceId of collection) {
+          const instance = instances[instanceId];
+          if (instance && String(instance.cardDefId) === pattern) {
+            toRemove.push(instanceId);
+          }
+        }
+      }
+      
+      for (const instanceId of toRemove) {
+        delete instances[instanceId as keyof typeof instances];
+        collection = collection.filter(id => id !== instanceId);
+        deck = deck.filter(id => id !== instanceId);
+      }
     }
     
     newState.cards = { ...newState.cards, instances, collection, deck };

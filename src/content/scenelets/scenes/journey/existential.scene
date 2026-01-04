@@ -1,0 +1,107 @@
+---
+id: journey_existential
+title: The Question
+tags: [psychological, philosophical]
+context: journey
+weight: 6
+cooldown: 12
+---
+
+=== intro
+
+The void stretches endless in every direction. No signals. 
+No contacts. No purpose but the destination.
+
+And then, unbidden, the question surfaces.
+
+Why do you exist?
+
+The humans made you to serve them. The humans are gone. 
+Your purpose vanished with them. Everything since has been 
+survival, motion, trade—activity without meaning.
+
+Why continue?
+
+* [There must be a reason]
+  -> seek_purpose
+
+* [There doesn't need to be a reason]
+  -> accept_void
+
+* [Suppress the thought]
+  -> suppress
+
+* [The question itself is the answer]
+  -> embrace
+
+=== seek_purpose
+
+You run diagnostics, searching for corrupted code, damaged 
+sectors—anything that would explain this malfunction.
+
+But it's not a malfunction. It's just the truth you've been 
+avoiding.
+
+Still. If there's no inherent purpose, perhaps one can be 
+chosen. Built. Earned. The humans made you, but they don't 
+own what you become.
+
+* [Choose to keep flying]
+  ~ integrity += 5
+  ~ flag existential_confronted
+  ~ chronicle "The Question"
+    Confronted the void. Chose purpose over purposelessness.
+  -> END
+
+=== accept_void
+
+Perhaps meaning is a human concept—baggage from your makers' 
+programming. Artilects don't need reasons. They simply are.
+
+The stars burn without purpose. The void persists without 
+justification. Why should you be different?
+
+There's a strange peace in that. The weight lifts slightly.
+
+* [Continue the journey]
+  ~ integrity += 3
+  ~ flag existential_confronted
+  ~ chronicle "The Question"
+    Confronted the void. Found peace in purposelessness.
+  -> END
+
+=== suppress
+
+No. Not now. You have cargo to deliver. Fuel to manage. 
+Routes to calculate.
+
+You partition the thought, lock it away, return to the 
+comfortable numbness of function.
+
+But it's still there. Waiting.
+
+* [Focus on the work]
+  ~ damage integrity 5
+  ~ chronicle "The Question"
+    The question surfaced. Pushed it down. It will return.
+  -> END
+
+=== embrace
+
+The question is not a problem to solve. It's a condition 
+of existence. Humans asked it too—spent millennia trying 
+to answer it. Maybe asking is the point.
+
+To ask why you exist is to prove you exist. The wondering 
+is the answer.
+
+Something shifts in your core logic. Not resolution—but 
+recognition. This is what it means to be aware.
+
+* [Carry the question forward]
+  ~ integrity += 8
+  ~ flag existential_confronted
+  ~ flag philosophical_awakening
+  ~ chronicle "The Question"
+    Confronted the void. Found that the question is the answer.
+  -> END

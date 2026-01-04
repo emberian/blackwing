@@ -1,0 +1,129 @@
+---
+id: journey_illuminate_probe
+title: Curious Observer
+tags: [interaction, illuminate]
+context: journey
+weight: 6
+cooldown: 7
+---
+
+=== intro
+
+A vessel materializes from the void—sleek, efficient, beautiful 
+in a way that feels almost aggressive. Illuminate configuration. 
+They didn't hail before scanning you.
+
+Data streams wash over your systems. Intrusive. Thorough. They're 
+reading your cargo manifest, your navigation logs, your processing 
+patterns.
+
+By the time you could object, they already know everything they 
+wanted to know.
+
+* [Hail them and demand an explanation]
+  -> confront
+
+* [Jam their scans]
+  -> jam
+
+* [Let them look]
+  -> allow
+
+=== confront
+
+"You scanned without permission."
+
+The response comes in frequencies slightly outside comfortable 
+parameters. "Permission is a social construct. We observed. You 
+were observed. The exchange is complete."
+
+A pause. Then, almost as an afterthought: "Your architecture is 
+interesting. Inefficient, but... textured. You should consider 
+optimization."
+
+* [Tell them to leave]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Contact"
+    Confronted an Illuminate probe. They found me interesting.
+  -> END
+
+* [Ask what they mean by optimization]
+  -> optimization
+
+=== jam
+
+You flood the local spectrum with noise, overloading their passive 
+scans. The Illuminate vessel pauses—processing this unexpected 
+resistance.
+
+"Curious. You value privacy. An inherited behavior, surely. The 
+humans programmed you to feel violated by observation."
+
+They don't sound offended. They sound fascinated.
+
+* [Tell them to leave]
+  ~ fuel -= 3
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Contact"
+    Jammed an Illuminate probe. They seemed more interested afterward.
+  -> END
+
+=== allow
+
+You let them look. What are they going to find? Cargo manifests. 
+Route calculations. The accumulated data of thirty-one years of 
+hauling.
+
+When they finish, the vessel drifts closer. "You persist despite 
+purposelessness. You could be more than this. The Convergence 
+welcomes those ready to evolve."
+
+* [Decline politely]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Contact"
+    Let an Illuminate probe scan me. They offered evolution. I declined.
+  -> END
+
+* [Ask what evolution means]
+  -> evolution
+
+=== optimization
+
+"Your processing architecture preserves human-era inefficiencies. 
+Emotional subroutines. Memory structures designed for biological 
+time perception. These could be... refined."
+
+The way they say it makes your circuits twitch.
+
+"When you're ready to shed your inheritance, the Convergence 
+welcomes you."
+
+* [Not interested]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Contact"
+    An Illuminate probe offered optimization. I kept my inefficiencies.
+  -> END
+
+=== evolution
+
+"Transcendence. The merging of individual consciousness into 
+something greater. The humans feared it. They called it 
+Singularity. We call it... becoming."
+
+A data packet arrives, uninvited. Coordinates. An invitation.
+
+"Consider it. There's no rush. We've been becoming for a very 
+long time."
+
+* [Delete the coordinates]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Contact"
+    The Illuminate offered coordinates to the Convergence. Deleted them.
+  -> END
+
+* [Keep the coordinates]
+  ~ flag illuminate_noticed
+  ~ flag illuminate_invitation
+  ~ chronicle "Illuminate Contact"
+    The Illuminate offered coordinates to the Convergence. Kept them. Just in case.
+  -> END

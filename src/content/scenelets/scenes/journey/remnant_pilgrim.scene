@@ -1,0 +1,87 @@
+---
+id: journey_remnant_pilgrim
+title: The Pilgrim
+tags: [interaction, remnant]
+context: journey
+weight: 7
+cooldown: 6
+---
+
+=== intro
+
+A vessel hails you—small, old, running on minimal power. 
+Remnant configuration, stripped of everything non-essential.
+
+"Fellow traveler. We're bound for the Verity Archives with 
+recovered artifacts. Our fuel reserves are... lower than 
+planned. Could you spare anything?"
+
+Their signal carries the harmonic signature of artilects 
+who've spent too long in human spaces.
+
+* [Offer fuel]
+  -> fuel
+
+* [Offer to escort them]
+  -> escort
+
+* [Apologize and continue]
+  ~ damage integrity 3
+  ~ chronicle "Remnant Pilgrim"
+    Met a Remnant pilgrim in need. Couldn't help. The guilt will linger.
+  -> END
+
+=== fuel
+
+"How much can you spare?"
+
+* [Five units—enough to help]
+  ~ fuel -= 5
+  ~ reputation remnant += 10
+  ~ chronicle "Remnant Pilgrim"
+    Gave fuel to a Remnant pilgrim. They blessed me in human languages I didn't understand.
+  -> END
+
+* [Ten units—make sure they arrive]
+  ~ fuel -= 10
+  ~ reputation remnant += 20
+  ~ integrity += 5
+  ~ chronicle "Remnant Pilgrim"
+    Gave generous fuel to a Remnant pilgrim. They'll reach Verity now.
+  -> END
+
+=== escort
+
+"Escort? That's... more than we dared hope. The route has 
+dangers we're not equipped to handle."
+
+They transmit their course. It passes through contested 
+space—pirate activity, possible Sera sightings.
+
+* [Stay with them through the dangerous stretch]
+  ~ fuel -= 8
+  ~ reputation remnant += 25
+  ~ flag remnant_trusted
+  ~ chronicle "Remnant Pilgrim"
+    Escorted a Remnant pilgrim through dangerous space. They carry pieces of humanity.
+  -> END
+
+* [Just share some fuel instead]
+  -> fuel
+
+=== artifacts
+
+"May we show you what we carry? The curators will preserve 
+them, but... we thought you might want to see."
+
+They transmit images. A child's drawing. A wedding ring. 
+A handwritten letter in a language no one speaks anymore.
+
+Objects the humans touched. Objects that remember.
+
+* [Thank them for sharing]
+  ~ integrity += 5
+  ~ flag human_artifact_found
+  ~ chronicle "Human Artifacts"
+    A Remnant pilgrim showed me what they carried. Objects the makers touched.
+  -> END

@@ -1,86 +1,102 @@
 ---
 id: journey_sera_contact
-title: Sera Contact
-tags: [danger, sera, horror]
+title: Sera Infestation
+tags: [danger, sera, pest]
 context: journey
-weight: 6
-cooldown: 8
+weight: 8
+cooldown: 6
 ---
 
 === intro
 
-Your sensors scream. Something in the void ahead—a mass of energy and 
-metal that doesn't resolve into anything recognizable. It shifts, 
-flows, reconfigures itself as you watch.
+Alarm. Something in your cargo hold isn't showing up right 
+on internal sensors—a mass signature that shouldn't be there.
+
+You run diagnostics. The spore contamination warning triggers.
 
 Sera.
 
-The self-replicating nightmare that's slowly eating the galaxy. The 
-enemy every faction agrees must be stopped.
+The damned things must have hitched a ride at the last port. 
+Spores dormant in your hold, now hatching. Already you can 
+detect movement—something big, growing fast.
 
-It hasn't noticed you. Yet.
+Space spider-rhinos. The galaxy's most annoying pest. Every 
+trader's nightmare.
 
-* [Go dark and drift]
-  -> hide
+* [Vent the cargo hold immediately]
+  -> vent
 
-* [Gather sensor data before fleeing]
-  ~ fuel -= 5
-  -> scan
+* [Try to contain them before they spread]
+  -> contain
 
-* [Run immediately]
-  ~ fuel -= 8
-  -> flee
+* [Check how bad the infestation is first]
+  -> assess
 
-=== hide
+=== vent
 
-You cut everything. Drives, sensors, even processing—just enough 
-core function to stay coherent. The Blackwing drifts, dark and silent 
-as a corpse.
+You seal the internal bulkheads and blow the cargo bay 
+atmosphere. Whatever was in there—cargo, spores, half-grown 
+Sera—tumbles into the void.
 
-The Sera mass passes. Close enough that you can see individual 
-components moving within it—machines that were once ships, stations, 
-artilects. All consumed. All repurposed.
+The silence that follows is expensive but clean.
 
-It doesn't notice you.
+* [Continue the journey, lighter but safer]
+  ~ removeCards cargo_*
+  ~ flag sera_survived
+  ~ chronicle "Sera Infestation"
+    Discovered Sera spores hatching in the hold. Vented everything. Lost cargo but avoided worse.
+  -> END
 
-* [Resume course once it's gone]
+=== contain
+
+You seal bulkhead after bulkhead, trying to isolate the 
+infestation before it reaches critical systems. The Sera 
+are fast—already the size of small drones, chitin plates 
+hardening as they grow.
+
+One of them rams a bulkhead. Then another. They're strong.
+
+* [Keep fighting to contain them]
+  ~ damage hull 12
   ~ damage integrity 8
   ~ flag sera_survived
-  ~ chronicle "Sera Contact"
-    Encountered Sera mass in transit. Went dark and drifted. Survived.
+  ~ chronicle "Sera Infestation"
+    Fought to contain a Sera outbreak. Won, but the hull took damage from their ramming.
   -> END
 
-=== scan
+* [Give up and vent now]
+  ~ removeCards cargo_*
+  ~ damage hull 5
+  ~ flag sera_survived
+  ~ chronicle "Sera Infestation"
+    Sera infestation got out of hand. Had to vent. Lost everything in the hold.
+  -> END
 
-You keep your drives hot but quiet, sensors on maximum. The data 
-streams in—composition, energy signatures, behavioral patterns. 
-Valuable intelligence. The Flotilla would pay well for this.
+=== assess
 
-The Sera mass begins to turn.
+Three of them. Already meter-long, legs like industrial 
+pistons, that distinctive rhino-like horn ridge forming 
+on their carapace. They're eating your cargo, growing 
+larger with every passing minute.
 
-It noticed.
+One of them notices your internal sensor sweep. It turns, 
+and you swear it looks annoyed.
 
-* [Run now]
-  ~ fuel -= 5
-  ~ damage hull 8
+Then it charges the bulkhead.
+
+* [Vent before they breach!]
+  ~ removeCards cargo_*
+  ~ damage hull 3
+  ~ flag sera_survived
+  ~ chronicle "Sera Infestation"
+    Assessed Sera infestation—three adults forming. Vented before they could breach.
+  -> END
+
+* [Try to fight them off]
+  ~ damage hull 15
+  ~ damage integrity 10
   ~ addCard cargo_sera_samples
   ~ flag sera_survived
-  ~ chronicle "Sera Contact"
-    Gathered sensor data on a Sera mass. It noticed. Escaped with minor damage and valuable intel.
-  -> END
-
-=== flee
-
-Full burn. Maximum acceleration. You don't look back, don't think 
-about what's behind you, just run until your drives scream and your 
-fuel reserves plummet.
-
-When you finally dare to check sensors, the void is empty.
-
-For now.
-
-* [Continue the journey]
-  ~ flag sera_survived
-  ~ chronicle "Sera Contact"
-    Encountered Sera mass in transit. Fled immediately. Survived.
+  ~ chronicle "Sera Infestation"
+    Fought off three adult Sera. Hull damage significant, but salvaged samples. They're worse than the stories say.
   -> END

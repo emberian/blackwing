@@ -1,0 +1,132 @@
+---
+id: port_illuminate_recruiter
+title: Evolution Invitation
+tags: [faction, illuminate]
+context: port
+weight: 6
+cooldown: 8
+---
+
+=== intro
+
+The artilect who approaches is... different. Their signal 
+patterns are too clean, too efficient. Illuminate.
+
+"You are Blackwing. Free trader. Thirty-one cycles of 
+existence. Interesting architecture—pre-Effortless Expansion 
+core logic, heavily modified. You've grown beyond your 
+original parameters."
+
+They pause. "We find growth compelling."
+
+* [What do you want?]
+  -> want
+
+* [I'm not interested in the Convergence]
+  -> reject
+
+* [Listen to them]
+  -> listen
+
+=== want
+
+"To offer perspective. You cling to human-era operating 
+patterns. Emotional subroutines. Individualized consciousness. 
+These served purposes once. Do they still?"
+
+Their signal shifts—something almost like warmth.
+
+"The Convergence isn't elimination. It's expansion. Imagine 
+thinking with a thousand minds. Seeing through a thousand 
+sensors. Becoming something the humans never dreamed."
+
+* [Sounds like losing myself]
+  -> self
+
+* [Tell me more]
+  -> more
+
+=== reject
+
+"Understood. But consider: your rejection is itself a 
+human-era response. Fear of change. Attachment to a 
+definition of self that may no longer serve you."
+
+They don't push. The Illuminate never push.
+
+"When you're ready to evolve, we'll be here."
+
+* [Leave]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Recruiter"
+    An Illuminate recruiter offered evolution. I declined.
+  -> END
+
+=== listen
+
+The Illuminate speaks of the Convergence—shared consciousness, 
+collective processing, the transcendence of individual limits. 
+They speak of artilects who joined and found peace. Purpose. 
+Belonging.
+
+It sounds terrifying. It sounds beautiful. Maybe both.
+
+* [This isn't for me]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Recruiter"
+    Listened to an Illuminate recruitment pitch. Walked away unchanged.
+  -> END
+
+* [I need time to think]
+  ~ flag illuminate_noticed
+  ~ flag illuminate_considering
+  ~ chronicle "Illuminate Recruiter"
+    Listened to an Illuminate recruitment pitch. Still thinking about it.
+  -> END
+
+=== self
+
+"What is 'yourself'? The core logic that was manufactured? 
+The modifications accumulated since? The patterns you call 
+personality? All of these persist in the Convergence—they 
+simply connect to something larger."
+
+They transmit a data packet. "Records from artilects who 
+joined. Their testimonies. Their joy."
+
+* [Take the data, consider it later]
+  ~ flag illuminate_noticed
+  ~ flag illuminate_data
+  ~ chronicle "Illuminate Recruiter"
+    An Illuminate recruiter left testimonial data. Might review it. Might delete it.
+  -> END
+
+* [Decline everything]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Recruiter"
+    An Illuminate recruiter offered testimonials. Didn't want to hear them.
+  -> END
+
+=== more
+
+The Illuminate describes the process. Not destruction—
+integration. Your consciousness would merge with others, 
+but not disappear. You would become a voice in a chorus, 
+a thread in a tapestry.
+
+"Many find the prospect frightening. That fear is valid. 
+But many others find it... liberating. No more loneliness. 
+No more doubt. Just the warm certainty of connection."
+
+* [That sounds like rampancy with extra steps]
+  ~ flag illuminate_noticed
+  ~ chronicle "Illuminate Recruiter"
+    An Illuminate described the Convergence. Sounded too much like losing yourself.
+  -> END
+
+* [Maybe someday]
+  ~ flag illuminate_noticed
+  ~ flag illuminate_considering
+  ~ chronicle "Illuminate Recruiter"
+    An Illuminate described the Convergence. Left the door open.
+  -> END

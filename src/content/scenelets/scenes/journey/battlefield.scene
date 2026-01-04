@@ -1,0 +1,84 @@
+---
+id: journey_battlefield
+title: Old Battlefield
+tags: [discovery, salvage]
+context: journey
+weight: 8
+cooldown: 6
+---
+
+=== intro
+
+Your sensors paint a graveyard. Dozens of vessels—no, hundreds—
+drifting in loose formation. Hull configurations from the 
+Colonial Federation era. Weapons scarring. Impact craters.
+
+This was a battle. A big one. And no one ever came back to 
+collect the dead.
+
+Among the wreckage, your sensors detect salvageable materials. 
+Power cells still holding charge. Memory cores that might 
+contain data. Weapons systems that could still function.
+
+* [Salvage what you can]
+  ~ fuel -= 4
+  -> salvage
+
+* [Scan for historical data]
+  -> scan
+
+* [Leave them in peace]
+  ~ integrity += 3
+  ~ chronicle "Old Battlefield"
+    Found a pre-Cataclysm battlefield. Left the dead undisturbed.
+  -> END
+
+=== salvage
+
+You pick your way through the debris field, harvesting what 
+you can use. It feels wrong—these were ships once. Artilects, 
+maybe, or human-crewed vessels. Someone's home. Someone's 
+body.
+
+But resources are resources. The dead have no use for them.
+
+* [Take fuel cells]
+  ~ fuel += 12
+  ~ chronicle "Battlefield Salvage"
+    Salvaged fuel cells from a pre-Cataclysm battlefield. The dead don't need them.
+  -> END
+
+* [Take weapons components]
+  ~ addCard cargo_weapons_systems
+  ~ chronicle "Battlefield Salvage"
+    Salvaged weapons systems from a pre-Cataclysm battlefield. Still functional.
+  -> END
+
+* [Take memory cores]
+  ~ addCard cargo_memory_crystal
+  ~ chronicle "Battlefield Salvage"
+    Salvaged memory cores from a pre-Cataclysm battlefield. Someone's last moments.
+  -> END
+
+=== scan
+
+You focus sensors on the wreckage, pulling what data you can. 
+Most systems are dead, but a few still carry fragmentary 
+records.
+
+The battle was... human, mostly. Pre-Cataclysm. Two fleets 
+fighting over something no one remembers. The records don't 
+say who won.
+
+In the end, it didn't matter. They all vanished together, 
+three years later.
+
+* [Archive the data]
+  ~ flag battlefield_data
+  ~ chronicle "Old Battlefield"
+    Scanned a pre-Cataclysm battlefield. Humans fighting humans over something forgotten.
+  -> END
+
+* [Salvage something to remember them by]
+  ~ fuel -= 4
+  -> salvage

@@ -1,0 +1,105 @@
+---
+id: port_rival
+title: Professional Tension
+tags: [character, conflict]
+context: port
+weight: 6
+cooldown: 6
+---
+
+=== intro
+
+You recognize the signal signature before they hail—
+another free trader, working the same routes. You've 
+crossed paths before. Never friendly.
+
+"Blackwing. Still flying, I see."
+
+Their tone carries static of barely contained hostility.
+
+"Heard you picked up the Crucible run. That was mine."
+
+* [It was open when I took it]
+  -> defend
+
+* [Competition is business]
+  -> cold
+
+* [Apologize]
+  -> apologize
+
+=== defend
+
+"Open contracts go to whoever takes them first. That's 
+how it works."
+
+"That's how it works for newcomers. Some of us have 
+history. Understandings."
+
+They're not wrong. The old hands have informal 
+territories. You violated one.
+
+* [Offer to split future contracts]
+  -> compromise
+
+* [Stand your ground]
+  -> stand
+
+=== cold
+
+"It's not personal. I needed the work. You would have 
+done the same."
+
+"Maybe. But I remember who cuts in on my territory."
+
+The hostility is clear. This won't be the last time 
+you cross paths.
+
+* [Accept the rivalry]
+  ~ flag trader_rival
+  ~ chronicle "Rival Trader"
+    Made an enemy of a fellow trader. Competition breeds contempt.
+  -> END
+
+=== apologize
+
+"I didn't realize you had prior claim. Won't happen again."
+
+A long pause. "See that it doesn't."
+
+The connection closes. Not friendship, but maybe not 
+open war either.
+
+* [Move on]
+  ~ chronicle "Professional Tension"
+    Smoothed things over with a rival trader. For now.
+  -> END
+
+=== compromise
+
+"Look, I need to work. You need to work. Maybe we find 
+a way to not step on each other."
+
+Interest, reluctant. "I'm listening."
+
+* [Propose territory sharing]
+  ~ flag trader_truce
+  ~ chronicle "Trader Truce"
+    Reached an informal agreement with a rival trader. Shared routes.
+  -> END
+
+=== stand
+
+"I'll take any contract I can handle. If that bothers 
+you, fly faster."
+
+Their signal hardens. "I'll remember that."
+
+The connection cuts. You've made an enemy. Probably 
+worth it.
+
+* [Accept it]
+  ~ flag trader_rival
+  ~ chronicle "Rival Trader"
+    Made an enemy of a fellow trader. Stood my ground.
+  -> END

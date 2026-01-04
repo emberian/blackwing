@@ -1,0 +1,63 @@
+---
+id: port_price_crash
+title: Market Volatility
+tags: [trade, event]
+context: port
+weight: 7
+cooldown: 6
+---
+
+=== intro
+
+The market alerts cascade through your systems—prices 
+shifting, opportunities appearing, chaos in the exchanges.
+
+Something has disrupted supply lines. A Sera incursion, 
+maybe. A major contract falling through. The cause 
+doesn't matter. What matters is the opportunity.
+
+Prices are moving fast. You need to decide faster.
+
+* [Buy commodities before prices rise]
+  { credits >= 80 }
+  -> buy
+
+* [Sell cargo before prices fall]
+  { cargo.mineral }
+  -> sell
+
+* [Wait and watch]
+  ~ chronicle "Market Volatility"
+    Market disruption. Watched prices swing. Didn't act fast enough.
+  -> END
+
+=== buy
+
+You dump credits into the market, buying whatever's 
+undervalued before the rest of the traders catch on.
+
+The timing is good. Prices stabilize higher than you 
+paid. Profit.
+
+* [Secure the goods]
+  ~ credits -= 80
+  ~ addCard cargo_refined_metals
+  ~ addCard cargo_common_components
+  ~ chronicle "Market Play"
+    Bought commodities during a market dip. Good timing.
+  -> END
+
+=== sell
+
+You move fast, liquidating cargo before the price floor 
+drops. Other traders are doing the same—it's a race to 
+the exits.
+
+You make it out ahead. Not maximum value, but better 
+than holding through the crash.
+
+* [Take the credits]
+  ~ credits += 50
+  ~ chronicle "Market Play"
+    Sold cargo during market volatility. Got out before the crash.
+  -> END

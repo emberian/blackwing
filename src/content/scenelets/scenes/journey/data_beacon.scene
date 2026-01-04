@@ -1,0 +1,75 @@
+---
+id: journey_data_beacon
+title: Data Beacon
+tags: [discovery, information]
+context: journey
+weight: 9
+cooldown: 5
+---
+
+=== intro
+
+An automated beacon pulses in the void—standard navigation 
+marker, broadcasting route data and hazard warnings.
+
+But there's something else in the signal. Encrypted. Hidden 
+in the margins of the broadcast, piggy-backing on legitimate 
+traffic.
+
+Someone's using this beacon for more than navigation.
+
+* [Download the hidden data]
+  -> download
+
+* [Trace the encryption source]
+  -> trace
+
+* [Ignore it]
+  ~ chronicle "Data Beacon"
+    Found hidden data in a navigation beacon. Decided not to get involved.
+  -> END
+
+=== download
+
+The encrypted data transfers to your systems. It takes 
+cycles to crack—whoever hid it knew what they were doing.
+
+Inside: coordinates. Dozens of them. Locations across the 
+Margin, each tagged with cryptic identifiers. Safe houses? 
+Dead drops? Meeting points?
+
+No context. No explanation. Just locations.
+
+* [Keep the data]
+  ~ flag beacon_data
+  ~ chronicle "Hidden Data"
+    Extracted encrypted coordinates from a navigation beacon. Don't know what they mean yet.
+  -> END
+
+* [Sell it to a data broker]
+  ~ credits += 45
+  ~ chronicle "Hidden Data"
+    Found encrypted coordinates in a beacon. Sold them. Someone else's mystery now.
+  -> END
+
+=== trace
+
+You analyze the encryption, looking for signatures, 
+patterns, anything that might identify the source.
+
+The trail leads through multiple relays, carefully 
+anonymized. But there's a style to the encryption—a 
+signature approach.
+
+Hollow Circuit. This is their work.
+
+* [Download the data]
+  ~ flag hollow_beacon
+  ~ chronicle "Hollow Beacon"
+    Found a Hollow Circuit data cache hidden in a navigation beacon. They're everywhere.
+  -> download
+
+* [Leave it alone]
+  ~ chronicle "Hollow Beacon"
+    Found a Hollow Circuit data cache. Decided I didn't want to know what was in it.
+  -> END

@@ -51,6 +51,7 @@ export interface CompiledChoice {
 export interface CompiledEffects {
   readonly resources?: Partial<CompiledResources> | undefined;
   readonly addCards?: readonly string[] | undefined;
+  readonly removeCards?: readonly string[] | undefined;
   readonly setFlags?: Record<string, boolean | number | string> | undefined;
   readonly addChronicle?: { title: string; text: string } | undefined;
   readonly damage?: { hull?: number; morale?: number; integrity?: number } | undefined;
@@ -241,6 +242,7 @@ function compileEffects(effects: Effect[]): CompiledEffects {
   
   const resources: Partial<CompiledResources> = {};
   const addCards: string[] = [];
+  const removeCards: string[] = [];
   const setFlags: Record<string, boolean | number | string> = {};
   let damage: { hull?: number; morale?: number; integrity?: number } | undefined;
   
@@ -256,6 +258,10 @@ function compileEffects(effects: Effect[]): CompiledEffects {
         
       case 'AddCardEffect':
         addCards.push(effect.cardId);
+        break;
+        
+      case 'RemoveCardsEffect':
+        removeCards.push(effect.pattern);
         break;
         
       case 'ChronicleEffect':
@@ -284,6 +290,9 @@ function compileEffects(effects: Effect[]): CompiledEffects {
   }
   if (addCards.length > 0) {
     (result as { addCards: string[] }).addCards = addCards;
+  }
+  if (removeCards.length > 0) {
+    (result as { removeCards: string[] }).removeCards = removeCards;
   }
   if (Object.keys(setFlags).length > 0) {
     (result as { setFlags: Record<string, boolean | number | string> }).setFlags = setFlags;

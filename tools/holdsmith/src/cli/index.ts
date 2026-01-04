@@ -55,7 +55,7 @@ program
         
         const relDir = dirname(relPath);
         const subdirCount = relDir === '.' ? 0 : relDir.split('/').filter(p => p).length;
-        const depth = 3 + subdirCount;
+        const depth = 4 + subdirCount;
         const importPath = '../'.repeat(depth) + 'core/types.js';
         
         const output = options.json 
@@ -179,7 +179,7 @@ function findSceneFiles(dir: string): string[] {
 function generateIndex(compiled: Array<{ file: string; id: string }>): string {
   const lines: string[] = [];
   
-  lines.push('import type { Scenelet } from \'../../../core/types.js\';');
+  lines.push('import type { Scenelet } from \'../../../../core/types.js\';');
   
   for (const { file, id } of compiled) {
     const importPath = './' + file.replace(/\.scene$/, '.js').replace(/\\/g, '/');

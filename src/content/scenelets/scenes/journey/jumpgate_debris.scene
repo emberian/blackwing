@@ -1,0 +1,79 @@
+---
+id: journey_jumpgate_debris
+title: Broken Gate
+tags: [environment, discovery]
+context: journey
+weight: 6
+cooldown: 8
+---
+
+=== intro
+
+The jumpgate appears on sensors as it should—a massive 
+ring of alien-derived technology, promising instant 
+transit across light-years.
+
+Then you get closer and see the truth.
+
+It's broken. The ring is shattered, fragments spinning 
+slowly in the void. Whatever happened here, the gate 
+won't be opening again.
+
+* [Investigate the damage]
+  ~ fuel -= 3
+  -> investigate
+
+* [Salvage what you can]
+  -> salvage
+
+* [Log it and continue]
+  ~ chronicle "Broken Gate"
+    Found a destroyed jumpgate. Another connection severed. Logged and moved on.
+  -> END
+
+=== investigate
+
+The damage patterns tell a story. Not impact—the fragments 
+would be different. Not age—the materials should last 
+millennia. Something overloaded the gate's systems. Something 
+made it tear itself apart.
+
+The Cataclysm? A Sera attack? Sabotage? The wreckage 
+holds no answers.
+
+But there's something in the debris. A navigation buoy, 
+still broadcasting. Still trying to guide ships to a 
+gate that no longer exists.
+
+* [Shut down the buoy]
+  ~ integrity += 3
+  ~ chronicle "Broken Gate"
+    Found a destroyed jumpgate. Shut down the navigation buoy. No one should look for this anymore.
+  -> END
+
+* [Leave it broadcasting]
+  ~ flag broken_gate_logged
+  ~ chronicle "Broken Gate"
+    Found a destroyed jumpgate. Left the buoy running. Maybe someone will investigate.
+  -> END
+
+=== salvage
+
+Jumpgate materials are valuable—the alloys alone are 
+worth significant credits. You pick through the debris, 
+harvesting what you can.
+
+It feels wrong, somehow. Like grave robbing. But the 
+gate's not using the material anymore.
+
+* [Take the components]
+  ~ credits += 60
+  ~ chronicle "Broken Gate"
+    Salvaged components from a destroyed jumpgate. The gate won't miss them.
+  -> END
+
+* [Leave it intact]
+  ~ integrity += 2
+  ~ chronicle "Broken Gate"
+    Found a destroyed jumpgate. Couldn't bring myself to salvage it.
+  -> END

@@ -168,6 +168,7 @@ export type Effect =
   | ResourceEffect
   | FlagEffect
   | AddCardEffect
+  | RemoveCardsEffect
   | ChronicleEffect
   | DamageEffect
   | ReputationEffect;
@@ -190,6 +191,12 @@ export interface FlagEffect extends ASTNode {
 export interface AddCardEffect extends ASTNode {
   readonly type: 'AddCardEffect';
   readonly cardId: string;
+}
+
+/** Remove cards from player (supports wildcards like cargo_*) */
+export interface RemoveCardsEffect extends ASTNode {
+  readonly type: 'RemoveCardsEffect';
+  readonly pattern: string;
 }
 
 /** Add a chronicle entry */

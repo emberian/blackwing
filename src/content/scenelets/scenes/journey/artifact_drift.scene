@@ -1,0 +1,76 @@
+---
+id: journey_artifact_drift
+title: Drifting Object
+tags: [discovery, artifact]
+context: journey
+weight: 7
+cooldown: 6
+---
+
+=== intro
+
+Something tumbles through the void ahead—small, dense, 
+definitely artificial. Not debris. The composition is 
+wrong for any known ship material.
+
+Your sensors can't identify it. That alone makes it 
+interesting.
+
+* [Retrieve it]
+  ~ fuel -= 2
+  -> retrieve
+
+* [Scan remotely]
+  -> scan
+
+* [Leave it]
+  ~ chronicle "Drifting Object"
+    Detected an unidentified object in the void. Left it alone.
+  -> END
+
+=== scan
+
+Your sensors sweep the object. Metal alloys in unusual 
+combinations. Internal structure too complex for natural 
+formation. Age: indeterminate. Origin: unknown.
+
+It's definitely artificial. But not human design. Not 
+artilect manufacture. Something else.
+
+* [Retrieve it for closer analysis]
+  ~ fuel -= 2
+  -> retrieve
+
+* [Log coordinates and continue]
+  ~ flag artifact_logged
+  ~ chronicle "Drifting Object"
+    Scanned an unidentified artifact. Non-human, non-artilect manufacture. Logged coordinates.
+  -> END
+
+=== retrieve
+
+Your salvage arms extend, grasping the object carefully. 
+Up close, it's even stranger—surfaces that seem to shift 
+under your sensors, materials that don't match any 
+database.
+
+When you bring it aboard, your cargo sensors register... 
+something. Not quite a signal. More like an echo.
+
+* [Keep it for study]
+  ~ flag alien_artifact
+  ~ chronicle "Alien Artifact"
+    Retrieved an unidentified object from the void. Not human. Not artilect. Something else.
+  -> END
+
+* [Jettison it immediately]
+  ~ flag artifact_jettisoned
+  ~ chronicle "Drifting Object"
+    Retrieved an unidentified object from the void. Didn't like what I sensed. Put it back.
+  -> END
+
+* [Sell it at the next port]
+  ~ credits += 150
+  ~ chronicle "Alien Artifact"
+    Retrieved an unidentified object from the void. Sold it without asking too many questions.
+  -> END

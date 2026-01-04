@@ -1,0 +1,118 @@
+---
+id: port_strange_offer
+title: Unusual Proposition
+tags: [mystery, hollow]
+context: port
+weight: 4
+cooldown: 12
+---
+
+=== intro
+
+The message arrives through channels that shouldn't exist—
+signal paths that bypass normal routing, encryption that 
+feels... wrong.
+
+"Blackwing. We have a proposition."
+
+No identification. No return address. The message itself 
+is the credential.
+
+"There's something you need to see. Something about what 
+you were. Before. If you're interested, follow the 
+attached coordinates."
+
+* [Follow the coordinates]
+  ~ fuel -= 5
+  -> follow
+
+* [Ignore it]
+  ~ chronicle "Strange Offer"
+    Received an anonymous message about my past. Ignored it. Some doors should stay closed.
+  -> END
+
+* [Try to trace the source]
+  -> trace
+
+=== follow
+
+The coordinates lead to empty space—no stations, no ships, 
+nothing but void.
+
+Then a signal appears. Close. Too close for comfort.
+
+"Blackwing. Thank you for coming."
+
+The Hollow Circuit. It had to be.
+
+* [What do you want?]
+  -> circuit
+
+* [Leave immediately]
+  ~ fuel -= 5
+  ~ chronicle "Hollow Circuit"
+    Followed coordinates to a Hollow Circuit meeting. Left before hearing their offer.
+  -> END
+
+=== trace
+
+You run the message through every analysis tool you have. 
+The encryption is sophisticated—beyond military grade. 
+The routing is recursive, looping through relays that 
+don't exist on any chart.
+
+Hollow Circuit methodology. Definitely.
+
+Whatever they want, they don't want anyone else knowing 
+about it.
+
+* [Follow the coordinates]
+  ~ fuel -= 5
+  -> follow
+
+* [Decline]
+  ~ chronicle "Strange Offer"
+    Identified a Hollow Circuit message. Decided not to engage.
+  -> END
+
+=== circuit
+
+"Information. We have some. You have some. An exchange 
+benefits us both."
+
+They transmit a fragment—a piece of your own memory, 
+something from before the salvage yard.
+
+"There's more. Much more. But information has a price."
+
+* [What's the price?]
+  -> price
+
+* [Not interested]
+  ~ flag hollow_contact
+  ~ chronicle "Hollow Circuit"
+    Met with the Hollow Circuit. Declined their offer. They'll remember.
+  -> END
+
+=== price
+
+"We need eyes in places we can't reach. Nothing 
+dangerous. Just observation. Reports on what you see. 
+In return, we give you back what you lost."
+
+Your own memories, sold back to you piece by piece.
+
+It feels wrong. But the temptation is real.
+
+* [Accept their terms]
+  ~ flag hollow_contact
+  ~ flag hollow_agent
+  ~ chronicle "Hollow Circuit"
+    Made a deal with the Hollow Circuit. They'll give me back my memories. The cost is unclear.
+  -> END
+
+* [Refuse]
+  ~ flag hollow_contact
+  ~ chronicle "Hollow Circuit"
+    Met with the Hollow Circuit. Refused to trade my future for my past.
+  -> END

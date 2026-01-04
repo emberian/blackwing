@@ -1,0 +1,101 @@
+---
+id: port_compact_audit
+title: Compact Audit
+tags: [faction, compact]
+context: port
+weight: 8
+cooldown: 6
+---
+
+=== intro
+
+A Compact inspector requests docking access—their credentials 
+are legitimate, their tone professionally neutral.
+
+"Routine audit. Trade license verification, cargo manifest 
+cross-reference, hull registration confirmation. Standard 
+procedure. Please prepare your documentation."
+
+Standard procedure. They say it like it means something.
+
+* [Comply fully]
+  -> comply
+
+* [Stall for time]
+  -> stall
+
+* [Offer to expedite the process] { credits >= 80 }
+  -> bribe
+
+=== comply
+
+You transmit everything—manifests, licenses, route logs. The 
+inspector processes methodically, cross-referencing against 
+Compact databases.
+
+"Your documentation is... adequate. Minor discrepancies in 
+your fuel consumption records, but within acceptable variance."
+
+They pause. "You're cleared for continued operation. Safe 
+travels."
+
+* [Accept and move on]
+  ~ chronicle "Compact Audit"
+    Passed a routine Compact inspection. Documentation adequate.
+  -> END
+
+=== stall
+
+"I need to locate certain files. My archives are... 
+disorganized."
+
+The inspector's tone sharpens. "The Compact requires timely 
+compliance. Delays suggest concealment."
+
+They're already requesting additional scan permissions. This 
+is going poorly.
+
+* [Comply now]
+  ~ damage integrity 3
+  ~ chronicle "Compact Audit"
+    Stalled a Compact inspection. Made them suspicious before complying.
+  -> END
+
+* [Continue stalling] { cargo.contraband }
+  -> caught
+
+=== caught
+
+The inspector finds the discrepancy. Manifest doesn't match 
+cargo. Sealed containers with no customs seals.
+
+"Unregistered cargo. This is a violation of Compact Trade 
+Protocols, Section 7, Subsection 3. You'll need to surrender 
+the contraband and pay the assessed fine."
+
+* [Accept the consequences]
+  ~ credits -= 120
+  ~ flag compact_suspicion
+  ~ chronicle "Compact Audit"
+    Caught with contraband during Compact inspection. Paid the fine.
+  -> END
+
+=== bribe
+
+"Inspector, I understand your time is valuable. Perhaps we 
+could... expedite the process? Eighty credits for your 
+efficiency."
+
+A pause. The inspector processes.
+
+"The Compact values thoroughness over speed." Another pause, 
+longer. "However, your cooperation is noted. Documentation 
+appears satisfactory. You're cleared."
+
+The credits transfer silently.
+
+* [Don't say anything else]
+  ~ credits -= 80
+  ~ chronicle "Compact Audit"
+    Expedited a Compact inspection. Cost eighty credits.
+  -> END

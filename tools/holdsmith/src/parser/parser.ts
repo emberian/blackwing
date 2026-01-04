@@ -12,6 +12,7 @@ import type {
   ResourceEffect,
   FlagEffect,
   AddCardEffect,
+  RemoveCardsEffect,
   ChronicleEffect,
   DamageEffect,
   ReputationEffect,
@@ -495,6 +496,21 @@ function parseEffect(state: ParserState): Effect {
       cardId,
       span: spanFrom(startToken, current(state), state.filename),
     } satisfies AddCardEffect;
+  }
+  
+  if (keyword === 'removeCards') {
+    let pattern = consume(state, 'IDENTIFIER', 'Expected card pattern').value;
+    if (check(state, 'CHOICE_MARKER')) {
+      advance(state);
+      pattern += '*';
+    }
+    skipNewlines(state);
+    
+    return {
+      type: 'RemoveCardsEffect',
+      pattern,
+      span: spanFrom(startToken, current(state), state.filename),
+    } satisfies RemoveCardsEffect;
   }
   
   if (keyword === 'chronicle') {

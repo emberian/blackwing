@@ -1,0 +1,110 @@
+---
+id: journey_pursuit
+title: Hostile Pursuit
+tags: [danger, combat]
+context: journey
+weight: 7
+cooldown: 5
+---
+
+=== intro
+
+The contact appeared ten minutes ago. Matching your course. 
+Matching your speed. Slowly closing the gap.
+
+No hails. No identification. Just a drive signature and a 
+trajectory that says one thing clearly: they want you.
+
+You're faster, but not by much. And they know where you're going.
+
+* [Try to outrun them]
+  ~ fuel -= 8
+  -> outrun
+
+* [Find somewhere to hide]
+  -> hide
+
+* [Turn and confront them]
+  -> confront
+
+* [Send a distress signal]
+  -> distress
+
+=== outrun
+
+Full burn. You push your drives past comfortable limits, 
+watching fuel reserves drop while the gap slowly widens.
+
+They pursue for an hour. Two. Then their drive signature 
+fades—either they gave up or they couldn't match your 
+acceleration.
+
+Either way, you're alone again.
+
+* [Resume normal cruise]
+  ~ chronicle "Hostile Pursuit"
+    Outran an unknown pursuer. Never found out what they wanted.
+  -> END
+
+=== hide
+
+Your nav charts show a debris field nearby—remnants of some 
+ancient collision. Dense enough to break sensor locks. Dense 
+enough to be dangerous.
+
+* [Risk the debris field]
+  ~ fuel -= 4
+  -> debris
+
+* [Keep running instead]
+  ~ fuel -= 8
+  -> outrun
+
+=== debris
+
+You cut drives and drift into the field. Fragments of ancient 
+rock and metal ping against your hull as you navigate by 
+inertia alone.
+
+The pursuer follows—then stops at the edge. Either they're not 
+willing to risk the debris, or they've lost you in the clutter.
+
+You wait. They wait. Eventually, they leave.
+
+* [Continue after they're gone]
+  ~ damage hull 4
+  ~ chronicle "Hostile Pursuit"
+    Lost a pursuer in a debris field. Some hull damage, but better than the alternative.
+  -> END
+
+=== confront
+
+You cut drives and pivot, bringing your sensors—and your 
+weapons—to bear on the approaching vessel.
+
+They slow. Stop. For a long moment, you face each other 
+across the void.
+
+Then they turn away. Whatever they wanted, they didn't 
+want it enough to risk a fight.
+
+* [Resume course]
+  ~ flag pursued_and_stood
+  ~ chronicle "Hostile Pursuit"
+    Turned to face a pursuer. They decided I wasn't worth the fight.
+  -> END
+
+=== distress
+
+You broadcast on emergency frequencies—location, situation, 
+request for assistance.
+
+No response. But your pursuer slows, then veers off. Witnesses 
+complicate things for predators.
+
+You're alone, but safe. This time.
+
+* [Continue the journey]
+  ~ chronicle "Hostile Pursuit"
+    Called for help during a pursuit. Help didn't come, but the pursuer left anyway.
+  -> END

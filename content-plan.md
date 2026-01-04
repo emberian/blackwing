@@ -44,7 +44,7 @@ The original game's five resources translate to the Blackwing universe:
 
 | ID | Title | Tags | Weight | Summary |
 |----|-------|------|--------|---------|
-| `journey_sera_contact` | Sera Contact | danger, sera, horror | 6 | Detect Sera signature. Evade, hide, or risk closer scan for intel. |
+| `journey_sera_contact` | Sera Infestation | danger, sera, pest | 8 | Spores hatched in your cargo hold. Deal with the infestation. |
 | `journey_pirate_ambush` | Hostile Contact | danger, combat | 10 | Pirates demand surrender. Fight, flee, negotiate, or surrender cargo. |
 | `journey_drone_swarm` | Extraction Protocol | danger, drones | 8 | Drone Intelligence units approach. Trigger protected-asset signal, flee, or let them scan. |
 | `journey_radiation_storm` | Solar Event | danger, environment | 10 | Radiation burst incoming. Shelter, ride it out, or try to outrun. |
@@ -144,7 +144,7 @@ The original game's five resources translate to the Blackwing universe:
 |----|-------|------|--------|---------|
 | `port_human_artifact` | Human Artifact | mystery, artifact | 6 | Someone selling genuine pre-Cataclysm item. What is it? What's it worth? |
 | `port_cataclysm_clue` | Fragment of History | mystery, cataclysm | 5 | Information about the Cataclysm surfaces. Another piece of the puzzle. |
-| `port_sera_intel` | Sera Intelligence | mystery, sera | 5 | Someone has data on Sera movements. Value? Accuracy? |
+| `port_sera_intel` | Sera Sightings | information, sera | 6 | Station wants pest sighting reports. Easy credits. |
 | `port_strange_offer` | Unusual Proposition | mystery, hollow | 4 | Offer that doesn't quite make sense. Hollow Circuit? Scam? Something else? |
 
 ---
@@ -181,7 +181,7 @@ The original game's five resources translate to the Blackwing universe:
 | `cargo_human_artifacts` | Human Artifacts | 90 | artifact, human | Pre-Cataclysm cultural items. Remnant pays premium. |
 | `cargo_genetic_archive` | Genetic Archive | 100 | biological, human | DNA samples, preserved organisms. Irreplaceable. |
 | `cargo_weapons_systems` | Weapons Systems | 110 | military, restricted | Combat equipment. Restricted in Compact space. |
-| `cargo_sera_samples` | Sera Samples | 150 | sera, dangerous | Material from destroyed Sera. Research value. Dangerous to transport. |
+| `cargo_sera_samples` | Sera Chitin | 150 | sera, dangerous | Plates from a dead Sera. Research value. Might attract more. |
 
 ### Legendary/Unique Cargo
 
@@ -301,7 +301,6 @@ Modules are upgrades installed in ship slots. The Blackwing has the following sl
 |----|------|-------|---------|-------------|
 | `companion_hollow_contact` | Hollow Circuit Contact | N/A | Access to Hollow Circuit events, information trades | They're watching. They're interested. That might be good. |
 | `companion_memory_echo` | Memory Echo | N/A | Unlocks memory-related events, clues about your past | Something from before. Fragments surfacing. |
-| `companion_sera_sample` | Contained Sera Sample | N/A | Research options, danger | You kept a piece. It's still active. Why did you keep it? |
 
 ---
 
@@ -425,8 +424,8 @@ Flags track persistent state across encounters:
 
 | Flag | Set By | Effect |
 |------|--------|--------|
-| `sera_survived` | Sera encounter | Unlocks achievement, affects future Sera events |
-| `sera_intel_gathered` | Sera scanning option | Flotilla interested, research options |
+| `sera_survived` | Sera infestation | Unlocks achievement, Sera events more likely (spores follow you) |
+| `sera_reporter` | Reporting Sera sightings | Stations pay for information |
 | `hollow_contact` | Hollow Circuit events | Access to Whisper Market, information trades |
 | `memory_pursued` | Memory fragment events | Unlocks deeper memory events |
 | `memory_suppressed` | Memory fragment events | Different narrative path |

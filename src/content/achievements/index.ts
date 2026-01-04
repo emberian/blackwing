@@ -187,9 +187,9 @@ export const ACHIEVEMENTS: Achievement[] = [
   // Hidden Achievements
   {
     id: id('sera_survivor'),
-    name: 'Sera Survivor',
-    description: 'Survive a Sera encounter',
-    icon: '👁️',
+    name: 'Pest Control',
+    description: 'Survive a Sera infestation',
+    icon: '🦏',
     hidden: true,
     check: (state: GameState) => state.flags['sera_survived'] === true,
   },

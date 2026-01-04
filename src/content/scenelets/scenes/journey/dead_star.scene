@@ -1,0 +1,71 @@
+---
+id: journey_dead_star
+title: Stellar Remnant
+tags: [environment, cosmic]
+context: journey
+weight: 7
+cooldown: 7
+---
+
+=== intro
+
+Your route passes near a stellar corpse—a black dwarf, 
+cold and dark, radiating nothing but gravity. The star 
+that made the atoms in your hull died billions of years 
+before the humans evolved.
+
+There's something humbling about it. Even stars end.
+
+Your sensors detect unusual particle emissions from the 
+remnant. Exotic matter, perhaps. Valuable to the right 
+buyer.
+
+* [Harvest exotic particles]
+  ~ fuel -= 6
+  -> harvest
+
+* [Scan for scientific data]
+  -> scan
+
+* [Observe and continue]
+  ~ integrity += 3
+  ~ chronicle "Stellar Remnant"
+    Passed a dead star. Older than everything. Even stars end.
+  -> END
+
+=== harvest
+
+You edge closer to the remnant, extending collectors 
+toward the particle streams. The gravity is treacherous—
+you have to fight for every meter.
+
+But the particles flow in. Trace amounts of matter that 
+shouldn't exist, formed in the heart of a dying star.
+
+* [Take what you can and withdraw]
+  ~ credits += 80
+  ~ chronicle "Stellar Remnant"
+    Harvested exotic particles from a dead star. The gravity nearly had me.
+  -> END
+
+=== scan
+
+Your sensors sweep the remnant, recording data no one 
+has gathered before. The star's death throes, frozen 
+in particle streams. The echo of a supernova that 
+happened when the universe was young.
+
+The data has value—scientific, historical, philosophical. 
+A record of endings.
+
+* [Archive it]
+  ~ flag stellar_data
+  ~ chronicle "Stellar Remnant"
+    Scanned a dead star. Recorded the echoes of an ancient supernova.
+  -> END
+
+* [Sell it to the Remnant]
+  ~ reputation remnant += 10
+  ~ chronicle "Stellar Remnant"
+    Scanned a dead star. The Remnant will add it to their archives of endings.
+  -> END

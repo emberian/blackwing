@@ -1,0 +1,88 @@
+---
+id: port_information_broker
+title: Data Dealer
+tags: [opportunity, information]
+context: port
+weight: 8
+cooldown: 5
+---
+
+=== intro
+
+A data broker makes contact—anonymous signal, professional 
+demeanor. They deal in information: routes, manifests, 
+secrets, and coordinates.
+
+"I have inventory. Are you buying, selling, or both?"
+
+* [What are you selling?]
+  -> selling
+
+* [What are you buying?]
+  -> buying
+
+* [Not interested]
+  ~ chronicle "Data Broker"
+    Declined a data broker's offer. Information is dangerous.
+  -> END
+
+=== selling
+
+"Route intelligence—which lanes are hot, which are cold. 
+Market predictions—where to buy, where to sell. And 
+special items for special clients."
+
+They list prices. Route data is affordable. Market 
+predictions cost more. The "special items" are expensive.
+
+* [Buy route intelligence]
+  ~ credits -= 30
+  ~ chronicle "Route Intelligence"
+    Bought route data from a broker. Knowledge is worth the credits.
+  -> END
+
+* [Buy market predictions]
+  ~ credits -= 60
+  ~ flag market_intel
+  ~ chronicle "Market Intelligence"
+    Bought market predictions from a broker. Hopefully accurate.
+  -> END
+
+* [Ask about special items]
+  -> special
+
+=== buying
+
+"Anything unusual. Cataclysm-era data. Faction movements. 
+Sera intelligence. The Hollow Circuit pays well for 
+certain things."
+
+They pause meaningfully.
+
+"If you find something interesting out there, bring it 
+to me first."
+
+* [I'll keep that in mind]
+  ~ flag broker_contact
+  ~ chronicle "Data Broker"
+    Made contact with a data broker. They're buying unusual information.
+  -> END
+
+=== special
+
+"Coordinates to a salvage site no one's found yet. Fifty 
+credits. Could be profitable. Could be dangerous."
+
+They don't guarantee anything.
+
+* [Buy the coordinates]
+  ~ credits -= 50
+  ~ flag secret_coordinates
+  ~ chronicle "Secret Coordinates"
+    Bought coordinates to an unknown salvage site. Roll the dice.
+  -> END
+
+* [Too risky]
+  ~ chronicle "Data Broker"
+    Passed on expensive coordinates. Too much unknown.
+  -> END

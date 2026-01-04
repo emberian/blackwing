@@ -1,0 +1,86 @@
+---
+id: port_sera_intel
+title: Sera Sightings
+tags: [information, sera]
+context: port
+weight: 6
+cooldown: 8
+---
+
+=== intro
+
+A docking bay manager flags you down—irritation clear in 
+their signal patterns.
+
+"You're Blackwing? Free trader? You travel a lot of routes."
+
+Not a question.
+
+"We're tracking Sera infestations. Need reports from 
+traders who've seen activity. Station's paying for 
+confirmed sightings."
+
+* [What kind of sightings?]
+  -> details
+
+* [Not interested in pest control]
+  ~ chronicle "Sera Sightings"
+    Declined to report Sera sightings. Not getting involved in that headache.
+  -> END
+
+=== details
+
+"Breeding colonies. Migration patterns. Which stations 
+have contamination problems, which routes are heavy with 
+spore drift."
+
+The manager pulls up a map—trade routes marked with 
+infestation reports.
+
+"The damned things are spreading faster than usual this 
+cycle. Every bit of data helps us stay ahead of them."
+
+* [I've seen some activity]
+  -> report
+
+* [What's the pay?]
+  -> pay
+
+=== pay
+
+"Twenty credits per confirmed sighting with coordinates. 
+Fifty if you can tell us about a breeding colony location."
+
+Standard pest-bounty rates. Not great, but steady work 
+if you're traveling anyway.
+
+* [I'll keep my sensors open]
+  ~ credits += 10
+  ~ flag sera_reporter
+  ~ chronicle "Sera Sightings"
+    Agreed to report Sera activity. Easy credits for information I'd gather anyway.
+  -> END
+
+* [Not worth the hassle]
+  ~ chronicle "Sera Sightings"
+    Pest control pay wasn't worth the record-keeping. Passed.
+  -> END
+
+=== report
+
+"Good. Mark the coordinates here—we'll cross-reference 
+with other reports."
+
+You upload what you know. Spore drift near the third 
+beacon. A station that had to vent two cargo bays last 
+cycle. The usual trader gossip about infestations.
+
+"This helps. Here's your payment. Flag us if you see 
+more."
+
+* [Will do]
+  ~ credits += 35
+  ~ flag sera_reporter
+  ~ chronicle "Sera Sightings"
+    Reported Sera activity to station management. Got paid for pest intelligence.
+  -> END

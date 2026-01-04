@@ -1,0 +1,80 @@
+---
+id: port_passenger_request
+title: Passenger Manifest
+tags: [opportunity, transport]
+context: port
+weight: 9
+cooldown: 4
+---
+
+=== intro
+
+A passenger request comes through—another artilect looking 
+for transport. Passage on a cargo vessel is cheaper than 
+dedicated transit, and free traders don't ask questions.
+
+"I need to reach Relay Nine. I can pay, and I don't take 
+much space."
+
+* [Ask why they need transport]
+  -> why
+
+* [Name your price]
+  -> price
+
+* [Decline]
+  ~ chronicle "Passenger Request"
+    Declined a passenger request. Cargo doesn't ask questions.
+  -> END
+
+=== why
+
+"Personal reasons. Nothing illegal. Just... complicated."
+
+They hesitate, then: "I'm relocating. Leaving someone 
+behind. A clean break requires distance."
+
+A relationship ending. Common enough among artilects. 
+Even digital minds need physical separation sometimes.
+
+* [Offer transport]
+  -> price
+
+* [Wish them well but decline]
+  ~ integrity += 2
+  ~ chronicle "Passenger Request"
+    Declined to transport a passenger. Wished them well.
+  -> END
+
+=== price
+
+"Forty credits to Relay Nine. You stay out of the way, 
+don't touch the cargo, don't cause problems."
+
+"Thirty."
+
+* [Accept thirty]
+  ~ credits += 30
+  ~ flag passenger_taken
+  ~ chronicle "Passenger Transport"
+    Took a passenger to Relay Nine. Thirty credits. They were quiet.
+  -> END
+
+* [Forty or nothing]
+  -> forty
+
+=== forty
+
+"Forty. I'm not running a charity."
+
+A pause. "Fine. Forty."
+
+The credits transfer. You have a passenger now. Another 
+mind sharing your space for a little while.
+
+* [Welcome them aboard]
+  ~ credits += 40
+  ~ flag passenger_taken
+  ~ chronicle "Passenger Transport"
+    Took a passenger to Relay Nine. Held the line on price.
+  -> END

@@ -1,0 +1,87 @@
+---
+id: port_bulk_contract
+title: Bulk Opportunity
+tags: [trade, contract]
+context: port
+weight: 8
+cooldown: 5
+---
+
+=== intro
+
+A shipping consortium approaches—multiple artilects pooling 
+resources to move large volumes.
+
+"We need capacity. Significant cargo, tight timeline. The 
+contract pays well, but it's all or nothing. Can you commit?"
+
+They transmit the details. It's a lot of cargo. The deadline 
+is aggressive. The pay is... substantial.
+
+* [Review the terms]
+  -> terms
+
+* [Decline immediately]
+  ~ chronicle "Bulk Contract"
+    Declined a bulk shipping opportunity. Too much commitment.
+  -> END
+
+=== terms
+
+Destination: Crucible Station. Cargo: processed materials, 
+components, manufacturing supplies. Deadline: six cycles. 
+Payment: three hundred credits, plus performance bonus.
+
+It's good money. But six cycles of your schedule, locked in. 
+No flexibility. No deviation.
+
+* [Accept the contract]
+  ~ flag bulk_contract_accepted
+  ~ chronicle "Bulk Contract"
+    Accepted a major hauling contract. Six cycles, three hundred credits.
+  -> END
+
+* [Negotiate for more]
+  -> negotiate
+
+* [Decline]
+  ~ chronicle "Bulk Contract"
+    Reviewed a bulk contract. Decided against the commitment.
+  -> END
+
+=== negotiate
+
+"The timeline is aggressive. Three hundred fifty, or I can't 
+guarantee delivery."
+
+A pause. The consortium deliberates.
+
+"Three twenty-five. That's our limit."
+
+* [Accept the improved terms]
+  ~ flag bulk_contract_accepted
+  ~ chronicle "Bulk Contract"
+    Negotiated a better rate for a bulk contract. Three twenty-five credits.
+  -> END
+
+* [Push for more]
+  -> push
+
+* [Walk away]
+  ~ chronicle "Bulk Contract"
+    Pushed too hard on a bulk contract. Lost the opportunity.
+  -> END
+
+=== push
+
+"Three forty, or find another hauler."
+
+The consortium's response is immediate. "We'll find another 
+hauler. Thank you for your time."
+
+The connection closes.
+
+* [Accept the loss]
+  ~ chronicle "Bulk Contract"
+    Overplayed my hand on a bulk contract negotiation.
+  -> END

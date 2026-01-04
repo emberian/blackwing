@@ -422,7 +422,7 @@ export interface SceneletChoice {
 export interface SceneletEffects {
   readonly resources?: Partial<Resources>;
   readonly addCards?: readonly CardDefId[];
-  readonly removeCards?: readonly CardInstanceId[];
+  readonly removeCards?: readonly string[];
   readonly setFlags?: Record<string, boolean | number | string>;
   readonly addChronicle?: { title: string; text: string };
   readonly reputation?: { faction: FactionId; amount: number };
