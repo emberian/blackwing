@@ -22,6 +22,8 @@ pub struct EdgeId(pub usize);
 pub struct CfgNode {
     /// Index into the scene's passages array
     pub passage_index: usize,
+    /// Raw Rhai on-enter source (for counterexamples)
+    pub on_enter_source: SmolStr,
     /// Analyzed on-enter effects (from passage's rhai_on_enter)
     pub on_enter_analysis: Option<ScriptAnalysis>,
     /// Whether this is an exit node (no outgoing edges to non-END)
@@ -189,8 +191,16 @@ pub fn build_cfg(scene: &Scene) -> SceneCfg {
         // Check if all choices lead to END (making this an exit)
         let is_exit = passage.choices.iter().all(|c| matches!(c.next, Navigation::End));
 
+        // Get the raw on_enter source for counterexamples
+        let on_enter_source = passage
+            .rhai_on_enter
+            .as_ref()
+            .map(|s| s.clone())
+            .unwrap_or_default();
+
         nodes.push(CfgNode {
             passage_index,
+            on_enter_source,
             on_enter_analysis,
             is_exit,
         });

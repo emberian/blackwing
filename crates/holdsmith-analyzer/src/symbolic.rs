@@ -268,6 +268,55 @@ impl<'ctx> SymbolicState<'ctx> {
         let constraint = self.resource_eq(name, value);
         self.solver.assert(&constraint);
     }
+
+    /// Get a model satisfying current constraints (if SAT).
+    /// Returns None if constraints are unsatisfiable.
+    pub fn get_model(&self) -> Option<z3::Model<'ctx>> {
+        if self.solver.check() == SatResult::Sat {
+            self.solver.get_model()
+        } else {
+            None
+        }
+    }
+
+    /// Extract concrete values from a model for all tracked variables.
+    /// Returns (resources, flags) where each is a vec of (name, value).
+    pub fn extract_concrete_state(&self, model: &z3::Model<'ctx>) -> (Vec<(SmolStr, i64)>, Vec<(SmolStr, bool)>) {
+        let mut resources = Vec::new();
+        let mut flags = Vec::new();
+
+        for (name, var) in &self.resources {
+            if let Some(val) = model.eval(var, true) {
+                if let Some(i) = val.as_i64() {
+                    resources.push((name.clone(), i));
+                }
+            }
+        }
+
+        for (name, var) in &self.flags {
+            if let Some(val) = model.eval(var, true) {
+                if let Some(b) = val.as_bool() {
+                    flags.push((name.clone(), b));
+                }
+            }
+        }
+
+        // Sort for consistent output
+        resources.sort_by(|a, b| a.0.cmp(&b.0));
+        flags.sort_by(|a, b| a.0.cmp(&b.0));
+
+        (resources, flags)
+    }
+
+    /// Get the names of all tracked resources.
+    pub fn tracked_resources(&self) -> impl Iterator<Item = &SmolStr> {
+        self.resources.keys()
+    }
+
+    /// Get the names of all tracked flags.
+    pub fn tracked_flags(&self) -> impl Iterator<Item = &SmolStr> {
+        self.flags.keys()
+    }
 }
 
 /// Create a Z3 context with default configuration.

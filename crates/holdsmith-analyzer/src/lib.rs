@@ -23,7 +23,8 @@ mod symbolic;
 
 pub use analyzer::{
     analyze_cfg, analyze_scene, analyze_scenes, analyze_scenes_parallel, AnalysisResult,
-    ImpossibleChoice, ReadLocation, SceneStats, StateRefKind, TautologicalChoice, UninitializedRead,
+    ConcreteState, Counterexample, ImpossibleChoice, ReadLocation, SceneStats, StateRefKind,
+    TautologicalChoice, TraceStep, UninitializedRead,
 };
 pub use cfg::{build_cfg, CfgEdge, CfgError, CfgLocation, CfgNode, CfgTarget, EdgeId, NodeId, SceneCfg};
 pub use cross_scene::{

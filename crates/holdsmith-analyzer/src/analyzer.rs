@@ -55,6 +55,8 @@ pub struct ImpossibleChoice {
     pub choice_index: usize,
     pub choice_text: SmolStr,
     pub reason: String,
+    /// Detailed counterexample showing why the condition is impossible
+    pub counterexample: Option<Counterexample>,
 }
 
 /// A choice whose condition is always true.
@@ -63,6 +65,41 @@ pub struct TautologicalChoice {
     pub passage_index: usize,
     pub choice_index: usize,
     pub choice_text: SmolStr,
+    /// Detailed explanation showing why the condition is always true
+    pub counterexample: Option<Counterexample>,
+}
+
+/// A counterexample explaining why a condition is impossible or tautological.
+#[derive(Debug, Clone)]
+pub struct Counterexample {
+    /// Trace of constraints/effects applied before the condition was checked
+    pub trace: Vec<TraceStep>,
+    /// Concrete state values at the point the condition is evaluated
+    pub state: ConcreteState,
+    /// Human-readable explanation
+    pub explanation: String,
+}
+
+/// A step in the constraint trace.
+#[derive(Debug, Clone)]
+pub enum TraceStep {
+    /// Scene requirement was applied
+    SceneRequirement { source: SmolStr },
+    /// On-enter effect was applied
+    OnEnterEffect { passage_index: usize, source: SmolStr },
+    /// Incoming edge effect was applied (from taking a choice)
+    IncomingEdgeEffect { from_passage: usize, choice_index: usize, source: SmolStr },
+    /// The condition being checked
+    ConditionCheck { source: SmolStr },
+}
+
+/// Concrete state values extracted from Z3 model.
+#[derive(Debug, Clone, Default)]
+pub struct ConcreteState {
+    /// Resource values: name -> value
+    pub resources: Vec<(SmolStr, i64)>,
+    /// Flag values: name -> is_set
+    pub flags: Vec<(SmolStr, bool)>,
 }
 
 /// A resource/flag read that might not be initialized.
@@ -195,6 +232,7 @@ fn analyze_reachability(cfg: &SceneCfg, result: &mut AnalysisResult) {
 /// 3. Applies on_enter effects for the current passage
 /// 4. Encodes each choice condition as a Z3 formula
 /// 5. Checks if conditions are impossible (unsatisfiable) or tautological (always true)
+/// 6. Generates counterexamples with concrete state values and traces
 #[cfg(feature = "z3")]
 fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
     use crate::cfg::CfgEdge;
@@ -234,8 +272,14 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
             // Create fresh symbolic state for this analysis
             let mut state = SymbolicState::new(&ctx);
 
+            // Build trace of steps for counterexample
+            let mut trace = Vec::new();
+
             // Encode scene requirements as preconditions
             if !cfg.requirements_source.is_empty() {
+                trace.push(TraceStep::SceneRequirement {
+                    source: cfg.requirements_source.clone(),
+                });
                 let mut encoder = ConditionEncoder::new(&ctx, &mut state);
                 if let EncodedCondition::Bool(req_constraint) = encoder.encode_script(&cfg.requirements_source) {
                     state.assert_constraint(&req_constraint);
@@ -250,14 +294,30 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
                     if incoming.len() == 1 {
                         // Single incoming edge - apply its effects precisely
                         let incoming_edge = incoming[0];
-                        if let Some(ref effects_analysis) = incoming_edge.effects_analysis {
-                            state.apply_writes(effects_analysis);
-                        }
-                        // Also apply on_enter effects from the source passage
+
+                        // Apply on_enter effects from the source passage first
                         if let Some(source_node) = cfg.node(incoming_edge.from) {
                             if let Some(ref source_on_enter) = source_node.on_enter_analysis {
+                                if !source_node.on_enter_source.is_empty() {
+                                    trace.push(TraceStep::OnEnterEffect {
+                                        passage_index: incoming_edge.from.0,
+                                        source: source_node.on_enter_source.clone(),
+                                    });
+                                }
                                 state.apply_writes(source_on_enter);
                             }
+                        }
+
+                        // Apply the edge's effects
+                        if let Some(ref effects_analysis) = incoming_edge.effects_analysis {
+                            if !incoming_edge.effects_source.is_empty() {
+                                trace.push(TraceStep::IncomingEdgeEffect {
+                                    from_passage: incoming_edge.from.0,
+                                    choice_index: incoming_edge.choice_index,
+                                    source: incoming_edge.effects_source.clone(),
+                                });
+                            }
+                            state.apply_writes(effects_analysis);
                         }
                     }
                     // For multiple incoming edges, we'd need to:
@@ -269,8 +329,19 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
 
             // Apply on_enter effects for the current passage
             if let Some(ref on_enter) = node.on_enter_analysis {
+                if !node.on_enter_source.is_empty() {
+                    trace.push(TraceStep::OnEnterEffect {
+                        passage_index: passage_idx,
+                        source: node.on_enter_source.clone(),
+                    });
+                }
                 state.apply_writes(on_enter);
             }
+
+            // Add the condition being checked to the trace
+            trace.push(TraceStep::ConditionCheck {
+                source: edge.condition_source.clone(),
+            });
 
             // Encode the choice condition
             let mut encoder = ConditionEncoder::new(&ctx, &mut state);
@@ -280,19 +351,49 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
                 EncodedCondition::Bool(cond_constraint) => {
                     // Check if condition is impossible (unsat given preconditions)
                     if state.is_unsat(&cond_constraint) {
+                        // Get a model of the state (without the condition) to show concrete values
+                        let counterexample = if let Some(model) = state.get_model() {
+                            let (resources, flags) = state.extract_concrete_state(&model);
+                            let concrete_state = ConcreteState { resources, flags };
+                            let explanation = build_impossible_explanation(&trace, &concrete_state, &edge.condition_source);
+                            Some(Counterexample {
+                                trace: trace.clone(),
+                                state: concrete_state,
+                                explanation,
+                            })
+                        } else {
+                            None
+                        };
+
                         result.impossible_choices.push(ImpossibleChoice {
                             passage_index: passage_idx,
                             choice_index: edge.choice_index,
                             choice_text: edge.text.clone(),
                             reason: "Condition is unsatisfiable given scene requirements".to_string(),
+                            counterexample,
                         });
                     }
                     // Check if condition is a tautology (always true given preconditions)
                     else if state.is_valid(&cond_constraint) {
+                        // Get a model to show what state makes the condition true
+                        let counterexample = if let Some(model) = state.get_model() {
+                            let (resources, flags) = state.extract_concrete_state(&model);
+                            let concrete_state = ConcreteState { resources, flags };
+                            let explanation = build_tautological_explanation(&trace, &concrete_state, &edge.condition_source);
+                            Some(Counterexample {
+                                trace: trace.clone(),
+                                state: concrete_state,
+                                explanation,
+                            })
+                        } else {
+                            None
+                        };
+
                         result.tautological_choices.push(TautologicalChoice {
                             passage_index: passage_idx,
                             choice_index: edge.choice_index,
                             choice_text: edge.text.clone(),
+                            counterexample,
                         });
                     }
                 }
@@ -313,6 +414,105 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
             }
         }
     }
+}
+
+/// Build a human-readable explanation for an impossible condition.
+#[cfg(feature = "z3")]
+fn build_impossible_explanation(trace: &[TraceStep], state: &ConcreteState, condition: &str) -> String {
+    let mut lines = Vec::new();
+
+    lines.push("The condition can never be true because:".to_string());
+    lines.push(String::new());
+
+    // Show the trace of constraints/effects
+    for (i, step) in trace.iter().enumerate() {
+        let prefix = format!("{}.", i + 1);
+        match step {
+            TraceStep::SceneRequirement { source } => {
+                lines.push(format!("{} Scene requires: {}", prefix, source.trim()));
+            }
+            TraceStep::OnEnterEffect { passage_index, source } => {
+                lines.push(format!("{} Passage {} on_enter: {}", prefix, passage_index, source.trim()));
+            }
+            TraceStep::IncomingEdgeEffect { from_passage, choice_index, source } => {
+                lines.push(format!(
+                    "{} Effect from passage {} choice {}: {}",
+                    prefix, from_passage, choice_index, source.trim()
+                ));
+            }
+            TraceStep::ConditionCheck { source } => {
+                lines.push(format!("{} Condition requires: {}", prefix, source.trim()));
+            }
+        }
+    }
+
+    // Show concrete state
+    if !state.resources.is_empty() || !state.flags.is_empty() {
+        lines.push(String::new());
+        lines.push("Concrete state at condition check:".to_string());
+        for (name, value) in &state.resources {
+            lines.push(format!("  {} = {}", name, value));
+        }
+        for (name, value) in &state.flags {
+            lines.push(format!("  {} = {}", name, value));
+        }
+    }
+
+    lines.push(String::new());
+    lines.push(format!("Contradiction: `{}` is false in this state", condition.trim()));
+
+    lines.join("\n")
+}
+
+/// Build a human-readable explanation for a tautological condition.
+#[cfg(feature = "z3")]
+fn build_tautological_explanation(trace: &[TraceStep], state: &ConcreteState, condition: &str) -> String {
+    let mut lines = Vec::new();
+
+    lines.push("The condition is always true because:".to_string());
+    lines.push(String::new());
+
+    // Show the trace of constraints/effects
+    for (i, step) in trace.iter().enumerate() {
+        let prefix = format!("{}.", i + 1);
+        match step {
+            TraceStep::SceneRequirement { source } => {
+                lines.push(format!("{} Scene requires: {}", prefix, source.trim()));
+            }
+            TraceStep::OnEnterEffect { passage_index, source } => {
+                lines.push(format!("{} Passage {} on_enter: {}", prefix, passage_index, source.trim()));
+            }
+            TraceStep::IncomingEdgeEffect { from_passage, choice_index, source } => {
+                lines.push(format!(
+                    "{} Effect from passage {} choice {}: {}",
+                    prefix, from_passage, choice_index, source.trim()
+                ));
+            }
+            TraceStep::ConditionCheck { source } => {
+                lines.push(format!("{} Condition checks: {}", prefix, source.trim()));
+            }
+        }
+    }
+
+    // Show example concrete state (one of many possible)
+    if !state.resources.is_empty() || !state.flags.is_empty() {
+        lines.push(String::new());
+        lines.push("Example state satisfying preconditions:".to_string());
+        for (name, value) in &state.resources {
+            lines.push(format!("  {} = {}", name, value));
+        }
+        for (name, value) in &state.flags {
+            lines.push(format!("  {} = {}", name, value));
+        }
+    }
+
+    lines.push(String::new());
+    lines.push(format!(
+        "Given the preconditions, `{}` is always satisfied",
+        condition.trim()
+    ));
+
+    lines.join("\n")
 }
 
 /// Statistics about a scene.
@@ -676,5 +876,66 @@ mod tests {
         assert_eq!(result.tautological_choices.len(), 1,
             "Choice should be tautological - credits >= 200 after effect, so >= 100 is always true");
         assert_eq!(result.tautological_choices[0].choice_text.as_str(), "Spend some");
+    }
+
+    #[cfg(feature = "z3")]
+    #[test]
+    fn test_counterexample_generation() {
+        // This test verifies that counterexamples are generated with useful information.
+        let scene = Scene {
+            id: SceneId::new("test_counterexample"),
+            title: "Counterexample Test".into(),
+            tags: Tags::default(),
+            context: None,
+            weight: 10,
+            cooldown: 0,
+            rhai_requirements: r#"resource("credits") >= 100"#.into(),
+            passages: vec![
+                Passage {
+                    text: "Start".into(),
+                    rhai_on_enter: Some(r#"set_resource("credits", 0)"#.into()),
+                    choices: vec![
+                        Choice {
+                            text: "Impossible choice".into(),
+                            next: Navigation::End,
+                            rhai_condition: r#"resource("credits") >= 50"#.into(),
+                            rhai_effects: Default::default(),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = analyze_scene(&scene);
+
+        // Should have one impossible choice with a counterexample
+        assert_eq!(result.impossible_choices.len(), 1);
+        let impossible = &result.impossible_choices[0];
+
+        // Counterexample should be present
+        assert!(impossible.counterexample.is_some(), "Counterexample should be generated");
+
+        let ce = impossible.counterexample.as_ref().unwrap();
+
+        // Trace should contain the relevant steps
+        assert!(!ce.trace.is_empty(), "Trace should not be empty");
+
+        // Should have scene requirement in trace
+        assert!(ce.trace.iter().any(|s| matches!(s, TraceStep::SceneRequirement { .. })),
+            "Trace should include scene requirement");
+
+        // Should have on_enter effect in trace
+        assert!(ce.trace.iter().any(|s| matches!(s, TraceStep::OnEnterEffect { .. })),
+            "Trace should include on_enter effect");
+
+        // Concrete state should show credits = 0
+        assert!(ce.state.resources.iter().any(|(name, val)| name == "credits" && *val == 0),
+            "Concrete state should show credits = 0");
+
+        // Explanation should be human-readable
+        assert!(ce.explanation.contains("credits"), "Explanation should mention credits");
+
+        // Print the explanation to show what it looks like
+        println!("\n=== Counterexample Output ===\n{}\n", ce.explanation);
     }
 }

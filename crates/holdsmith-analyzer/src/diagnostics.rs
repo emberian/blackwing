@@ -27,6 +27,8 @@ pub struct Diagnostic {
     pub scene_id: SmolStr,
     pub location: Option<DiagnosticLocation>,
     pub help: Option<String>,
+    /// Detailed explanation (e.g., counterexample for impossible conditions)
+    pub details: Option<String>,
 }
 
 /// Diagnostic codes for categorization.
@@ -107,8 +109,12 @@ impl std::fmt::Display for Diagnostic {
             write!(f, " (at {})", loc)?;
         }
 
+        if let Some(ref details) = self.details {
+            write!(f, "\n\n{}", details)?;
+        }
+
         if let Some(ref help) = self.help {
-            write!(f, "\n  help: {}", help)?;
+            write!(f, "\n\n  help: {}", help)?;
         }
 
         Ok(())
@@ -131,11 +137,17 @@ pub fn generate_diagnostics(result: &AnalysisResult) -> Vec<Diagnostic> {
                 name: None,
             }),
             help: Some("Check if there should be a choice leading to this passage".to_string()),
+            details: None,
         });
     }
 
     // Impossible choices
     for impossible in &result.impossible_choices {
+        let details = impossible
+            .counterexample
+            .as_ref()
+            .map(|c| c.explanation.clone());
+
         diagnostics.push(Diagnostic {
             severity: Severity::Warning,
             code: DiagnosticCode::ImpossibleChoice,
@@ -150,11 +162,14 @@ pub fn generate_diagnostics(result: &AnalysisResult) -> Vec<Diagnostic> {
                 text: impossible.choice_text.clone(),
             }),
             help: Some("Review the condition or remove this choice".to_string()),
+            details,
         });
     }
 
     // Tautological choices
     for taut in &result.tautological_choices {
+        let details = taut.counterexample.as_ref().map(|c| c.explanation.clone());
+
         diagnostics.push(Diagnostic {
             severity: Severity::Info,
             code: DiagnosticCode::TautologicalChoice,
@@ -166,6 +181,7 @@ pub fn generate_diagnostics(result: &AnalysisResult) -> Vec<Diagnostic> {
                 text: taut.choice_text.clone(),
             }),
             help: Some("Consider removing the redundant condition".to_string()),
+            details,
         });
     }
 
@@ -178,6 +194,7 @@ pub fn generate_diagnostics(result: &AnalysisResult) -> Vec<Diagnostic> {
             scene_id: result.scene_id.clone(),
             location: Some(DiagnosticLocation::Scene),
             help: Some("This scene's outcomes cannot be fully analyzed statically".to_string()),
+            details: None,
         });
     }
 
@@ -190,6 +207,7 @@ pub fn generate_diagnostics(result: &AnalysisResult) -> Vec<Diagnostic> {
             scene_id: result.scene_id.clone(),
             location: None,
             help: None,
+            details: None,
         });
     }
 
@@ -256,6 +274,7 @@ mod tests {
                 name: Some("hidden".into()),
             }),
             help: Some("Add a choice leading here".to_string()),
+            details: None,
         };
 
         let s = diag.to_string();
@@ -290,6 +309,7 @@ mod tests {
                 scene_id: "test".into(),
                 location: None,
                 help: None,
+                details: None,
             },
             Diagnostic {
                 severity: Severity::Warning,
@@ -298,6 +318,7 @@ mod tests {
                 scene_id: "test".into(),
                 location: None,
                 help: None,
+                details: None,
             },
             Diagnostic {
                 severity: Severity::Warning,
@@ -306,6 +327,7 @@ mod tests {
                 scene_id: "test".into(),
                 location: None,
                 help: None,
+                details: None,
             },
         ];
 
