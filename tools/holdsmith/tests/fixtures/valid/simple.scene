@@ -1,0 +1,20 @@
+---
+id: simple_test
+title: Simple Test Scene
+tags: [test]
+context: journey
+weight: 10
+cooldown: 5
+---
+
+=== intro
+
+This is a simple test scene with one passage and two choices.
+
+* [First choice]
+  ~ credits += 10
+  -> END
+
+* [Second choice]
+  ~ morale -= 5
+  -> END

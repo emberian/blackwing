@@ -1,0 +1,61 @@
+---
+id: branching_test
+title: Branching Test Scene
+tags: [test, branching]
+context: port
+weight: 12
+cooldown: 3
+requires:
+  shipTags: [sensor]
+  minResources:
+    credits: 50
+---
+
+=== intro
+
+A branching scene with multiple passages and complex effects.
+
+You stand at a crossroads.
+
+* [Go left] { crew.engineering }
+  ~ fuel -= 5
+  ~ flag went_left
+  -> left_path
+
+* [Go right]
+  ~ flag went_right
+  -> right_path
+
+* [Stay put]
+  ~ morale -= 3
+  ~ chronicle "Indecision"
+    Couldn't make up our minds. Time wasted.
+  -> END
+
+=== left_path
+
+The left path leads to a workshop.
+
+* [Search the workshop]
+  ~ addCard cargo_salvage
+  ~ credits += 25
+  ~ chronicle "Workshop Discovery"
+    Found some useful salvage in an abandoned workshop.
+  -> END
+
+* [Leave quickly]
+  -> END
+
+=== right_path
+
+The right path leads to a marketplace.
+
+* [Trade goods]
+  ~ credits += 50
+  ~ supplies -= 5
+  -> END
+
+* [Ask for information]
+  ~ credits -= 10
+  ~ flag got_info
+  -> END
