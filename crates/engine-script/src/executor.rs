@@ -124,6 +124,86 @@ impl ScriptExecutor {
         self.execute(&ast, state, tags, rng_seed)
     }
 
+    /// Evaluate a Rhai expression as a boolean condition.
+    ///
+    /// This is used for evaluating choice conditions like `resource("credits") >= 100`.
+    /// Unlike `eval()`, this returns just the boolean result without collecting effects.
+    pub fn eval_condition(
+        &self,
+        source: &str,
+        state: &GameState,
+        tags: &dyn TagProvider,
+    ) -> Result<bool, ScriptError> {
+        // Snapshot data for dynamic lookup
+        let tag_snapshot = Arc::new(self.snapshot_tags(tags));
+        let flag_snapshot = Arc::new(self.snapshot_flags(state));
+        let resource_snapshot = Arc::new(self.snapshot_resources(state));
+        let reputation_snapshot = Arc::new(self.snapshot_reputations(state));
+
+        // Build engine with lookup functions only (no effect functions needed for conditions)
+        let engine = self.build_condition_engine(
+            tag_snapshot,
+            flag_snapshot,
+            resource_snapshot,
+            reputation_snapshot,
+        );
+
+        let result: bool = engine.eval(source)?;
+        Ok(result)
+    }
+
+    /// Build an engine with only lookup functions for condition evaluation.
+    fn build_condition_engine(
+        &self,
+        tag_snapshot: Arc<std::collections::HashMap<String, bool>>,
+        flag_snapshot: Arc<std::collections::HashMap<String, Dynamic>>,
+        resource_snapshot: Arc<std::collections::HashMap<String, i64>>,
+        reputation_snapshot: Arc<std::collections::HashMap<String, i64>>,
+    ) -> Engine {
+        let mut engine = Engine::new();
+
+        // Copy safety settings
+        engine.set_max_expr_depths(64, 32);
+        engine.set_max_operations(1_000); // Fewer ops needed for conditions
+        engine.set_max_string_size(1024);
+        engine.set_strict_variables(false);
+
+        // === Tag Lookup ===
+        let tags = tag_snapshot.clone();
+        engine.register_fn("has_tag", move |category: ImmutableString, tag: ImmutableString| -> bool {
+            let key = format!("{}:{}", category, tag);
+            tags.get(&key).copied().unwrap_or(false)
+        });
+
+        // === Flag Lookup ===
+        let flags = flag_snapshot.clone();
+        engine.register_fn("flag", move |name: ImmutableString| -> Dynamic {
+            flags.get(name.as_str()).cloned().unwrap_or(Dynamic::UNIT)
+        });
+
+        let flags = flag_snapshot.clone();
+        engine.register_fn("flag_bool", move |name: ImmutableString| -> bool {
+            flags
+                .get(name.as_str())
+                .and_then(|d| d.as_bool().ok())
+                .unwrap_or(false)
+        });
+
+        // === Resource Lookup ===
+        let resources = resource_snapshot.clone();
+        engine.register_fn("resource", move |name: ImmutableString| -> i64 {
+            resources.get(name.as_str()).copied().unwrap_or(0)
+        });
+
+        // === Reputation Lookup ===
+        let reps = reputation_snapshot.clone();
+        engine.register_fn("reputation", move |faction: ImmutableString| -> i64 {
+            reps.get(faction.as_str()).copied().unwrap_or(0)
+        });
+
+        engine
+    }
+
     /// Build an empty scope for script execution.
     /// Note: All game state access is through registered functions (resource(), has_tag(), etc.)
     /// rather than scope variables, because scope variables aren't visible at compile time.
@@ -491,5 +571,84 @@ mod tests {
             .unwrap();
 
         assert_eq!(result.effects.len(), 1);
+    }
+
+    #[test]
+    fn eval_condition_resource_check() {
+        let executor = ScriptExecutor::new();
+        let mut state = GameState::default();
+        state.set_resource(ResourceId::new("credits"), 150);
+        let tags = NoTags;
+
+        // Condition should pass (150 >= 100)
+        let result = executor
+            .eval_condition(r#"resource("credits") >= 100"#, &state, &tags)
+            .unwrap();
+        assert!(result);
+
+        // Condition should fail (150 >= 200)
+        let result = executor
+            .eval_condition(r#"resource("credits") >= 200"#, &state, &tags)
+            .unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn eval_condition_tag_check() {
+        struct ShipCombatTags;
+        impl TagProvider for ShipCombatTags {
+            fn has_tag(&self, category: &TagCategoryId, tag: &TagId) -> bool {
+                category.as_str() == "ship" && tag.as_str() == "combat"
+            }
+        }
+
+        let executor = ScriptExecutor::new();
+        let state = GameState::default();
+
+        // Should pass - has ship.combat tag
+        let result = executor
+            .eval_condition(r#"has_tag("ship", "combat")"#, &state, &ShipCombatTags)
+            .unwrap();
+        assert!(result);
+
+        // Should fail - doesn't have crew.engineering tag
+        let result = executor
+            .eval_condition(r#"has_tag("crew", "engineering")"#, &state, &ShipCombatTags)
+            .unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn eval_condition_combined() {
+        struct CombinedTags;
+        impl TagProvider for CombinedTags {
+            fn has_tag(&self, category: &TagCategoryId, tag: &TagId) -> bool {
+                category.as_str() == "ship" && tag.as_str() == "combat"
+            }
+        }
+
+        let executor = ScriptExecutor::new();
+        let mut state = GameState::default();
+        state.set_resource(ResourceId::new("credits"), 150);
+
+        // Both conditions true
+        let result = executor
+            .eval_condition(
+                r#"resource("credits") >= 100 && has_tag("ship", "combat")"#,
+                &state,
+                &CombinedTags,
+            )
+            .unwrap();
+        assert!(result);
+
+        // First true, second false
+        let result = executor
+            .eval_condition(
+                r#"resource("credits") >= 100 && has_tag("ship", "stealth")"#,
+                &state,
+                &CombinedTags,
+            )
+            .unwrap();
+        assert!(!result);
     }
 }

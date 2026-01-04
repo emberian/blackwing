@@ -1,7 +1,9 @@
+mod codegen;
 mod compiler;
 mod error;
 mod validator;
 
+pub use codegen::{generate_choice_script, generate_condition, generate_effects};
 pub use compiler::{compile, Compiler};
 pub use error::{CompileError, CompileResult, ValidationError, ValidationReport, ValidationWarning};
 pub use validator::{validate, validate_with_cards, Validator};

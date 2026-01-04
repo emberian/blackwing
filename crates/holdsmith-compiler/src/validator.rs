@@ -277,8 +277,12 @@ mod tests {
                         delta: -10,
                     }],
                     next: Navigation::End,
+                    rhai_condition: Some("resource(\"credits\") >= 10".into()),
+                    rhai_effects: Some("modify_resource(\"credits\", -10);".into()),
                 }],
+                rhai_on_enter: None,
             }],
+            rhai_requirements: None,
         }
     }
 

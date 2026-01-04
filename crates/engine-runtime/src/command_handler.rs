@@ -164,7 +164,21 @@ impl<'a> CommandHandler<'a> {
                 })?;
 
         let tags = DeckTagProvider::from_state(state, self.registry);
-        if !choice.requirements.check(state, &tags) {
+
+        // Evaluate condition: prefer Rhai if available, fall back to native Requirement
+        let condition_met = if let Some(ref rhai_condition) = choice.rhai_condition {
+            let executor = ScriptExecutor::new();
+            executor
+                .eval_condition(rhai_condition, state, &tags)
+                .unwrap_or_else(|_| {
+                    // If Rhai evaluation fails, fall back to native check
+                    choice.requirements.check(state, &tags)
+                })
+        } else {
+            choice.requirements.check(state, &tags)
+        };
+
+        if !condition_met {
             return Err(RuntimeError::ChoiceRequirementsNotMet);
         }
 
@@ -174,8 +188,25 @@ impl<'a> CommandHandler<'a> {
             choice_index,
         }];
 
-        let effect_events = self.apply_effects(state, &choice.effects, "choice", rng)?;
-        events.extend(effect_events);
+        // Execute effects: prefer Rhai if available, fall back to native effects
+        if let Some(ref rhai_effects) = choice.rhai_effects {
+            // Execute Rhai script to collect effects
+            let executor = ScriptExecutor::new();
+            let script_result = executor
+                .eval(rhai_effects, state, &tags, rng.state())
+                .map_err(|e| RuntimeError::ScriptError {
+                    message: e.to_string(),
+                })?;
+            *rng = Rng::new(script_result.rng_state);
+
+            // Apply the collected effects
+            let effect_events = self.apply_effects(state, &script_result.effects, "choice", rng)?;
+            events.extend(effect_events);
+        } else {
+            // Use native effects
+            let effect_events = self.apply_effects(state, &choice.effects, "choice", rng)?;
+            events.extend(effect_events);
+        }
 
         match &choice.next {
             Navigation::Passage(next_idx) => {

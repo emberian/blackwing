@@ -17,12 +17,20 @@ pub struct Scene {
     pub cooldown: u64,
     pub requirements: Requirement,
     pub passages: Vec<Passage>,
+    /// Rhai source for scene requirements (generated from DSL).
+    /// When present, this is the canonical requirement - `requirements` is derived from it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rhai_requirements: Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Passage {
     pub text: SmolStr,
     pub choices: Vec<Choice>,
+    /// Rhai source for passage-level effects (executed on passage entry).
+    /// Generated from inline `{ }` Rhai blocks in the DSL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rhai_on_enter: Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +39,14 @@ pub struct Choice {
     pub requirements: Requirement,
     pub effects: Vec<Effect>,
     pub next: Navigation,
+    /// Rhai source for the condition (generated from DSL conditions).
+    /// When present, this is the canonical condition - `requirements` is derived from it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rhai_condition: Option<SmolStr>,
+    /// Rhai source for the effects (generated from DSL effects).
+    /// When present, this is the canonical effects - `effects` may be empty or derived.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub rhai_effects: Option<SmolStr>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

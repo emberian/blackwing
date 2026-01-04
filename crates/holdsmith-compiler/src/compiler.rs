@@ -10,6 +10,7 @@ use holdsmith_parser::{
 };
 use smol_str::SmolStr;
 
+use crate::codegen;
 use crate::error::{CompileError, CompileResult};
 
 pub struct Compiler {
@@ -48,8 +49,18 @@ impl Compiler {
 
         let requirements = fm
             .requires
-            .map(|r| self.compile_requirements(&r))
+            .as_ref()
+            .map(|r| self.compile_requirements(r))
             .unwrap_or(Requirement::Always);
+
+        // Generate Rhai for scene requirements (if any)
+        let rhai_requirements = fm.requires.as_ref().map(|r| {
+            let condition = Condition {
+                clauses: self.requirements_to_clauses(r),
+                span: r.span.clone(),
+            };
+            SmolStr::new(codegen::generate_condition(&condition))
+        });
 
         let tags = fm
             .tags
@@ -66,6 +77,7 @@ impl Compiler {
             cooldown: fm.cooldown as u64,
             requirements,
             passages,
+            rhai_requirements,
         })
     }
 
@@ -89,6 +101,7 @@ impl Compiler {
         let mut text_parts = Vec::new();
         let mut choices = Vec::new();
         let mut passage_effects = Vec::new();
+        let mut rhai_scripts = Vec::new();
 
         for content in passage.content {
             match content {
@@ -99,7 +112,9 @@ impl Compiler {
                     choices.push(self.compile_choice(choice)?);
                 }
                 PassageContent::RhaiBlock(block) => {
-                    // Inline Rhai blocks become passage-level effects
+                    // Store the Rhai source for the passage
+                    rhai_scripts.push(block.source.to_string());
+                    // Also create Effect::Script for runtime execution
                     passage_effects.push(Effect::Script {
                         source: block.source,
                     });
@@ -108,6 +123,13 @@ impl Compiler {
         }
 
         let text = text_parts.join("\n");
+
+        // Combine Rhai scripts into rhai_on_enter
+        let rhai_on_enter = if rhai_scripts.is_empty() {
+            None
+        } else {
+            Some(SmolStr::new(rhai_scripts.join("\n")))
+        };
 
         // If there are passage-level effects and choices, prepend effects to first choice
         // or create a synthetic "Continue" choice if no choices exist
@@ -119,6 +141,8 @@ impl Compiler {
                     requirements: Requirement::Always,
                     effects: passage_effects,
                     next: Navigation::End,
+                    rhai_condition: None,
+                    rhai_effects: rhai_on_enter.clone(),
                 });
             } else {
                 // Prepend effects to the first choice
@@ -126,6 +150,15 @@ impl Compiler {
                 let mut combined_effects = passage_effects;
                 combined_effects.extend(first_choice.effects);
                 first_choice.effects = combined_effects;
+                // Also prepend Rhai to first choice's rhai_effects
+                if let Some(ref passage_rhai) = rhai_on_enter {
+                    let combined_rhai = if let Some(ref choice_rhai) = first_choice.rhai_effects {
+                        format!("{}\n{}", passage_rhai, choice_rhai)
+                    } else {
+                        passage_rhai.to_string()
+                    };
+                    first_choice.rhai_effects = Some(SmolStr::new(combined_rhai));
+                }
                 choices.insert(0, first_choice);
             }
         }
@@ -133,19 +166,35 @@ impl Compiler {
         Ok(RuntimePassage {
             text: text.into(),
             choices,
+            rhai_on_enter,
         })
     }
 
     fn compile_choice(&self, choice: ast::Choice) -> CompileResult<RuntimeChoice> {
+        // Generate Rhai condition if present
+        let rhai_condition = choice
+            .condition
+            .as_ref()
+            .map(|c| SmolStr::new(codegen::generate_condition(c)));
+
+        // Generate Rhai effects
+        let rhai_effects = if choice.effects.is_empty() {
+            None
+        } else {
+            Some(SmolStr::new(codegen::generate_effects(&choice.effects)))
+        };
+
+        // Also compile to native Requirement/Effect for backward compatibility
         let requirements = choice
             .condition
-            .map(|c| self.compile_condition(&c))
+            .as_ref()
+            .map(|c| self.compile_condition(c))
             .unwrap_or(Requirement::Always);
 
         let effects = choice
             .effects
-            .into_iter()
-            .map(|e| self.compile_effect(&e))
+            .iter()
+            .map(|e| self.compile_effect(e))
             .collect();
 
         let next = match choice.target {
@@ -169,6 +218,8 @@ impl Compiler {
             requirements,
             effects,
             next,
+            rhai_condition,
+            rhai_effects,
         })
     }
 
@@ -396,6 +447,75 @@ impl Compiler {
         }
 
         Requirement::and(clauses)
+    }
+
+    /// Convert Requirements (from frontmatter) to ConditionClauses for Rhai codegen.
+    fn requirements_to_clauses(&self, reqs: &ast::Requirements) -> Vec<ConditionClause> {
+        let mut clauses = Vec::new();
+
+        for tag in &reqs.ship_tags {
+            clauses.push(ConditionClause::Tag(ast::TagCondition {
+                source: TagSource::Ship,
+                tag: tag.clone(),
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for tag in &reqs.crew_tags {
+            clauses.push(ConditionClause::Tag(ast::TagCondition {
+                source: TagSource::Crew,
+                tag: tag.clone(),
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for tag in &reqs.cargo_tags {
+            clauses.push(ConditionClause::Tag(ast::TagCondition {
+                source: TagSource::Cargo,
+                tag: tag.clone(),
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for res in &reqs.min_resources {
+            clauses.push(ConditionClause::Resource(ast::ResourceCondition {
+                resource: res.resource.clone(),
+                operator: CompareOp::Ge,
+                value: res.value,
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for res in &reqs.max_resources {
+            clauses.push(ConditionClause::Resource(ast::ResourceCondition {
+                resource: res.resource.clone(),
+                operator: CompareOp::Le,
+                value: res.value,
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for flag in &reqs.required_flags {
+            clauses.push(ConditionClause::Flag(FlagCondition {
+                flag: flag.clone(),
+                negated: false,
+                operator: None,
+                value: None,
+                span: reqs.span.clone(),
+            }));
+        }
+
+        for flag in &reqs.excluded_flags {
+            clauses.push(ConditionClause::Flag(FlagCondition {
+                flag: flag.clone(),
+                negated: true,
+                operator: None,
+                value: None,
+                span: reqs.span.clone(),
+            }));
+        }
+
+        clauses
     }
 }
 
