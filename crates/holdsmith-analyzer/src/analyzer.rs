@@ -10,8 +10,6 @@ use std::collections::{HashSet, VecDeque};
 
 use smol_str::SmolStr;
 
-#[cfg(feature = "z3")]
-use z3::SatResult;
 
 use crate::cfg::{build_cfg, CfgTarget, SceneCfg};
 #[cfg(feature = "z3")]
@@ -189,9 +187,16 @@ fn analyze_reachability(cfg: &SceneCfg, result: &mut AnalysisResult) {
     }
 }
 
-/// Analyze choice conditions using symbolic execution.
+/// Analyze choice conditions using symbolic execution and Z3.
+///
+/// This function:
+/// 1. Encodes scene requirements as preconditions
+/// 2. Encodes each choice condition as a Z3 formula
+/// 3. Checks if conditions are impossible (unsatisfiable) or tautological (always true)
 #[cfg(feature = "z3")]
 fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
+    use crate::condition_encoder::{ConditionEncoder, EncodedCondition};
+
     let ctx = create_context();
 
     // For each passage, check if any choice conditions are impossible or tautological
@@ -202,60 +207,66 @@ fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
         let edges: Vec<_> = cfg.outgoing_edges(NodeId(passage_idx)).collect();
 
         for edge in edges {
-            // Skip choices without conditions (always available)
-            let Some(ref cond_analysis) = edge.condition_analysis else {
+            // Skip choices without conditions (empty conditions are always available)
+            if edge.condition_source.is_empty() {
                 continue;
-            };
+            }
+
+            // Skip RNG-dependent conditions (can't analyze statically)
+            if let Some(ref cond_analysis) = edge.condition_analysis {
+                if cond_analysis.uses_rng {
+                    continue;
+                }
+            }
 
             // Create fresh symbolic state for this analysis
             let mut state = SymbolicState::new(&ctx);
 
-            // Encode any scene requirements as constraints
-            if let Some(ref req_analysis) = cfg.requirements_analysis {
-                state.encode_reads(req_analysis);
-            }
-
-            // Encode reads from path to this passage
-            // (simplified: just encode the condition's reads)
-            state.encode_reads(cond_analysis);
-
-            // Build a condition based on what we know
-            // For now, we check if the condition reads are satisfiable
-            // A more sophisticated analysis would parse the actual condition
-
-            // Check if the condition has resource checks we can analyze
-            let mut has_constraints = false;
-            for state_ref in &cond_analysis.reads {
-                if let StateRef::Resource(name) = state_ref {
-                    // Assume resource checks are of the form "resource >= X"
-                    // We can't know X without parsing, but we can check if
-                    // it's possible for the resource to exist
-                    let _ = state.resource(name);
-                    has_constraints = true;
+            // Encode scene requirements as preconditions
+            if !cfg.requirements_source.is_empty() {
+                let mut encoder = ConditionEncoder::new(&ctx, &mut state);
+                if let EncodedCondition::Bool(req_constraint) = encoder.encode_script(&cfg.requirements_source) {
+                    state.assert_constraint(&req_constraint);
                 }
             }
 
-            // If we have no concrete constraints to check, skip
-            if !has_constraints {
-                continue;
-            }
+            // Encode the choice condition
+            let mut encoder = ConditionEncoder::new(&ctx, &mut state);
+            let condition = encoder.encode_script(&edge.condition_source);
 
-            // Check satisfiability
-            match state.check() {
-                SatResult::Unsat => {
-                    result.impossible_choices.push(ImpossibleChoice {
-                        passage_index: passage_idx,
-                        choice_index: edge.choice_index,
-                        choice_text: edge.text.clone(),
-                        reason: "Condition constraints are unsatisfiable".to_string(),
-                    });
+            match condition {
+                EncodedCondition::Bool(cond_constraint) => {
+                    // Check if condition is impossible (unsat given preconditions)
+                    if state.is_unsat(&cond_constraint) {
+                        result.impossible_choices.push(ImpossibleChoice {
+                            passage_index: passage_idx,
+                            choice_index: edge.choice_index,
+                            choice_text: edge.text.clone(),
+                            reason: "Condition is unsatisfiable given scene requirements".to_string(),
+                        });
+                    }
+                    // Check if condition is a tautology (always true given preconditions)
+                    else if state.is_valid(&cond_constraint) {
+                        result.tautological_choices.push(TautologicalChoice {
+                            passage_index: passage_idx,
+                            choice_index: edge.choice_index,
+                            choice_text: edge.text.clone(),
+                        });
+                    }
                 }
-                SatResult::Sat => {
-                    // Could check for tautology by checking if negation is unsat
-                    // But without full condition parsing, this is limited
+                EncodedCondition::NonDeterministic => {
+                    // RNG-dependent condition - already skipped above, but handle gracefully
                 }
-                SatResult::Unknown => {
-                    // Solver couldn't determine - skip
+                EncodedCondition::Int(_) => {
+                    // Condition evaluated to an integer, not a boolean - likely a bug in the scene
+                    result.errors.push(format!(
+                        "Choice condition in passage {} choice {} evaluates to integer, not boolean",
+                        passage_idx, edge.choice_index
+                    ));
+                }
+                EncodedCondition::Unknown(_reason) => {
+                    // Could not encode - log but don't treat as error (might be complex pattern)
+                    // This is fine for now; we can extend the encoder to handle more patterns
                 }
             }
         }
@@ -416,5 +427,83 @@ mod tests {
 
         assert_eq!(stats.reachable_passages, 3); // 0, 1, 2 are reachable
         assert!(!stats.uses_rng);
+    }
+
+    #[cfg(feature = "z3")]
+    #[test]
+    fn test_impossible_choice_detection() {
+        // Scene requires credits >= 100, but choice requires credits < 50
+        // This should be detected as impossible
+        let scene = Scene {
+            id: SceneId::new("test_impossible"),
+            title: "Impossible Test".into(),
+            tags: Tags::default(),
+            context: None,
+            weight: 10,
+            cooldown: 0,
+            rhai_requirements: r#"resource("credits") >= 100"#.into(),
+            passages: vec![
+                Passage {
+                    text: "Start".into(),
+                    rhai_on_enter: None,
+                    choices: vec![
+                        Choice {
+                            text: "Impossible choice".into(),
+                            next: Navigation::End,
+                            rhai_condition: r#"resource("credits") < 50"#.into(),
+                            rhai_effects: Default::default(),
+                        },
+                        Choice {
+                            text: "Normal choice".into(),
+                            next: Navigation::End,
+                            rhai_condition: Default::default(),
+                            rhai_effects: Default::default(),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = analyze_scene(&scene);
+
+        // Should detect the impossible choice
+        assert_eq!(result.impossible_choices.len(), 1);
+        assert_eq!(result.impossible_choices[0].choice_text.as_str(), "Impossible choice");
+    }
+
+    #[cfg(feature = "z3")]
+    #[test]
+    fn test_tautological_choice_detection() {
+        // Scene requires credits >= 100, choice requires credits >= 50
+        // The choice condition is always true given the scene requirements
+        let scene = Scene {
+            id: SceneId::new("test_tautology"),
+            title: "Tautology Test".into(),
+            tags: Tags::default(),
+            context: None,
+            weight: 10,
+            cooldown: 0,
+            rhai_requirements: r#"resource("credits") >= 100"#.into(),
+            passages: vec![
+                Passage {
+                    text: "Start".into(),
+                    rhai_on_enter: None,
+                    choices: vec![
+                        Choice {
+                            text: "Always available".into(),
+                            next: Navigation::End,
+                            rhai_condition: r#"resource("credits") >= 50"#.into(),
+                            rhai_effects: Default::default(),
+                        },
+                    ],
+                },
+            ],
+        };
+
+        let result = analyze_scene(&scene);
+
+        // Should detect the tautological choice
+        assert_eq!(result.tautological_choices.len(), 1);
+        assert_eq!(result.tautological_choices[0].choice_text.as_str(), "Always available");
     }
 }

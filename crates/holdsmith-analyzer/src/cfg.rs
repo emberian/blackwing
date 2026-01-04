@@ -39,8 +39,12 @@ pub struct CfgEdge {
     pub choice_index: usize,
     /// Choice text
     pub text: SmolStr,
+    /// Raw Rhai condition source (for Z3 encoding)
+    pub condition_source: SmolStr,
     /// Analyzed condition (from choice's rhai_condition)
     pub condition_analysis: Option<ScriptAnalysis>,
+    /// Raw Rhai effects source (for Z3 encoding)
+    pub effects_source: SmolStr,
     /// Analyzed effects (from choice's rhai_effects)
     pub effects_analysis: Option<ScriptAnalysis>,
 }
@@ -67,6 +71,8 @@ pub struct SceneCfg {
     pub entry: NodeId,
     /// Exit nodes (passages where all choices lead to END)
     pub exits: Vec<NodeId>,
+    /// Raw Rhai requirements source (for Z3 encoding)
+    pub requirements_source: SmolStr,
     /// Scene requirement analysis (from scene's rhai_requirements)
     pub requirements_analysis: Option<ScriptAnalysis>,
     /// Whether any script in this scene uses RNG
@@ -247,7 +253,9 @@ pub fn build_cfg(scene: &Scene) -> SceneCfg {
                 to,
                 choice_index,
                 text: choice.text.clone(),
+                condition_source: choice.rhai_condition.clone(),
                 condition_analysis,
+                effects_source: choice.rhai_effects.clone(),
                 effects_analysis,
             });
         }
@@ -267,6 +275,7 @@ pub fn build_cfg(scene: &Scene) -> SceneCfg {
         edges,
         entry: NodeId(0),
         exits,
+        requirements_source: scene.rhai_requirements.clone(),
         requirements_analysis,
         uses_rng,
         errors,

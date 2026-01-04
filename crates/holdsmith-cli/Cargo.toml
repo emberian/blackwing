@@ -14,3 +14,5 @@ holdsmith-compiler = { path = "../holdsmith-compiler" }
 holdsmith-analyzer = { path = "../holdsmith-analyzer" }
 clap = { workspace = true }
 anyhow = { workspace = true }
+serde_json = { workspace = true }
+smol_str = { workspace = true }
