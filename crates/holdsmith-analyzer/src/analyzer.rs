@@ -3,15 +3,20 @@
 //! This module provides high-level analysis of scenes:
 //! - Reachability analysis: which passages/choices can be reached
 //! - Dead code detection: unreachable passages
-//! - Impossible condition detection: choices that can never be taken
+//! - Impossible condition detection: choices that can never be taken (requires `z3` feature)
 //! - Resource depletion detection: paths that always lead to game over
 
 use std::collections::{HashSet, VecDeque};
 
 use smol_str::SmolStr;
+
+#[cfg(feature = "z3")]
 use z3::SatResult;
 
-use crate::cfg::{build_cfg, CfgTarget, NodeId, SceneCfg};
+use crate::cfg::{build_cfg, CfgTarget, SceneCfg};
+#[cfg(feature = "z3")]
+use crate::cfg::NodeId;
+#[cfg(feature = "z3")]
 use crate::symbolic::{create_context, SymbolicState};
 use engine_core::Scene;
 use engine_script::StateRef;
@@ -110,7 +115,8 @@ pub fn analyze_cfg(cfg: &SceneCfg) -> AnalysisResult {
     // Perform reachability analysis
     analyze_reachability(cfg, &mut result);
 
-    // Perform symbolic analysis for impossible/tautological conditions
+    // Perform symbolic analysis for impossible/tautological conditions (requires Z3)
+    #[cfg(feature = "z3")]
     analyze_conditions(cfg, &mut result);
 
     result
@@ -184,6 +190,7 @@ fn analyze_reachability(cfg: &SceneCfg, result: &mut AnalysisResult) {
 }
 
 /// Analyze choice conditions using symbolic execution.
+#[cfg(feature = "z3")]
 fn analyze_conditions(cfg: &SceneCfg, result: &mut AnalysisResult) {
     let ctx = create_context();
 
