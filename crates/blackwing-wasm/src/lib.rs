@@ -23,10 +23,9 @@
 //! })));
 //! ```
 
-use engine_bundle::GameBundle;
-use engine_primitives::{EntityId, Value};
+use blackwing_bundle::{standard_systems, GameBundle};
+use blackwing_core::{Command, EntityId, Value};
 use engine_runtime::{GeneralizedRuntime, RuntimeEvent};
-use engine_systems::Command;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -101,7 +100,27 @@ impl GameRunner {
         let bundle: GameBundle = serde_json::from_str(bundle_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse bundle: {}", e)))?;
 
-        let mut runtime = bundle.create_runtime(seed);
+        // Create runtime from bundle's initial state
+        let state = bundle.create_initial_state();
+        let mut runtime = GeneralizedRuntime::with_state(state, seed);
+
+        // Set game mode from manifest
+        runtime.set_mode(bundle.manifest.game_mode.clone());
+
+        // Register standard systems
+        if let Ok(systems) = standard_systems() {
+            for system in systems {
+                runtime.register_system(Box::new(system));
+            }
+        }
+
+        // Compile and register script systems from bundle
+        if let Ok(script_systems) = bundle.compile_systems() {
+            for system in script_systems {
+                runtime.register_system(Box::new(system));
+            }
+        }
+
         let player_actor = runtime.spawn_actor("player");
 
         // Set player at initial location if specified
@@ -126,7 +145,18 @@ impl GameRunner {
     #[wasm_bindgen]
     pub fn new_empty(seed: u64) -> GameRunner {
         let bundle = GameBundle::new("Empty Game");
-        let mut runtime = bundle.create_runtime(seed);
+
+        // Create runtime from bundle's initial state
+        let state = bundle.create_initial_state();
+        let mut runtime = GeneralizedRuntime::with_state(state, seed);
+
+        // Register standard systems
+        if let Ok(systems) = standard_systems() {
+            for system in systems {
+                runtime.register_system(Box::new(system));
+            }
+        }
+
         let player_actor = runtime.spawn_actor("player");
 
         GameRunner {
@@ -211,12 +241,12 @@ impl GameRunner {
     /// Get available commands based on current context.
     #[wasm_bindgen]
     pub fn get_available_commands(&self) -> String {
-        // Get commands from all enabled systems
+        // Get commands from all enabled systems (use iter for script systems)
         let systems = self.runtime.systems();
-        let commands: Vec<&str> = systems
+        let commands: Vec<String> = systems
             .enabled_systems()
-            .flat_map(|s| s.handles_commands())
-            .copied()
+            .flat_map(|s| s.handles_commands_iter())
+            .map(|s| s.to_string())
             .collect();
 
         serde_json::to_string(&commands).unwrap_or_else(|_| "[]".to_string())
@@ -226,11 +256,11 @@ impl GameRunner {
     #[wasm_bindgen]
     pub fn get_mode(&self) -> String {
         match self.runtime.mode() {
-            engine_primitives::GameMode::TurnBased => "turn_based".to_string(),
-            engine_primitives::GameMode::RealTime { tick_rate_ms } => {
+            blackwing_core::GameMode::TurnBased => "turn_based".to_string(),
+            blackwing_core::GameMode::RealTime { tick_rate_ms } => {
                 format!("real_time:{}", tick_rate_ms)
             }
-            engine_primitives::GameMode::Hybrid { tick_rate_ms, .. } => {
+            blackwing_core::GameMode::Hybrid { tick_rate_ms, .. } => {
                 format!("hybrid:{}", tick_rate_ms)
             }
         }
@@ -252,7 +282,7 @@ impl GameRunner {
     /// Add an entity template to the bundle (for hot-reload).
     #[wasm_bindgen]
     pub fn add_template(&mut self, template_json: &str) -> Result<(), JsValue> {
-        let template: engine_content::EntityTemplate = serde_json::from_str(template_json)
+        let template: blackwing_bundle::EntityTemplate = serde_json::from_str(template_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse template: {}", e)))?;
 
         self.bundle.templates.push(template);
@@ -262,7 +292,7 @@ impl GameRunner {
     /// Add a dialogue tree to the bundle (for hot-reload).
     #[wasm_bindgen]
     pub fn add_dialogue(&mut self, dialogue_json: &str) -> Result<(), JsValue> {
-        let dialogue: engine_content::DialogueTree = serde_json::from_str(dialogue_json)
+        let dialogue: blackwing_bundle::DialogueTree = serde_json::from_str(dialogue_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse dialogue: {}", e)))?;
 
         self.bundle.dialogues.push(dialogue);
@@ -272,7 +302,7 @@ impl GameRunner {
     /// Add a quest definition to the bundle (for hot-reload).
     #[wasm_bindgen]
     pub fn add_quest(&mut self, quest_json: &str) -> Result<(), JsValue> {
-        let quest: engine_content::QuestDef = serde_json::from_str(quest_json)
+        let quest: blackwing_bundle::QuestDef = serde_json::from_str(quest_json)
             .map_err(|e| JsValue::from_str(&format!("Failed to parse quest: {}", e)))?;
 
         self.bundle.quests.push(quest);

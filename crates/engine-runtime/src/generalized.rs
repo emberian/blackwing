@@ -6,11 +6,10 @@
 //! - Turn-based or real-time modes
 //! - System-based command dispatch
 
-use engine_primitives::{EntityId, GameMode, Rng, Value};
-use engine_systems::{
-    BoxedSystem, Command, Effect, SystemContext, SystemError, SystemRegistry, WorldView,
+use blackwing_core::{
+    BoxedSystem, ChronicleEntry, Command, Effect, EntityId, GameMode, Rng, Scope, ScopeStack,
+    SystemContext, SystemError, SystemRegistry, Value, WorldEvent, WorldState, WorldView,
 };
-use engine_world::{ChronicleEntry, Scope, ScopeStack, WorldEvent, WorldState};
 use thiserror::Error;
 
 /// Errors that can occur in the generalized runtime.
@@ -365,6 +364,218 @@ impl GeneralizedRuntime {
                     // Recursively apply batched effects
                     events.extend(self.apply_effects(actor, effects)?);
                 }
+
+                // UI effects - these are passed through as events for the frontend
+                Effect::SetUiRoot { root } => {
+                    events.push(RuntimeEvent::World(WorldEvent::UiSet {
+                        node: format!("{:?}", root),
+                    }));
+                }
+
+                Effect::UpdateUi { path, node } => {
+                    events.push(RuntimeEvent::World(WorldEvent::UiUpdated {
+                        path: path.to_string(),
+                        node: format!("{:?}", node),
+                    }));
+                }
+
+                Effect::ShowModal { content, blocking } => {
+                    events.push(RuntimeEvent::World(WorldEvent::ModalOpened {
+                        content: format!("{:?}", content),
+                        blocking,
+                    }));
+                }
+
+                Effect::CloseModal => {
+                    events.push(RuntimeEvent::World(WorldEvent::ModalClosed));
+                }
+
+                Effect::ClearUi => {
+                    events.push(RuntimeEvent::World(WorldEvent::UiCleared));
+                }
+
+                // === Spatial effects ===
+
+                Effect::SetPosition { entity, x, y } => {
+                    if let Some(key) = self.state.entities.key_of(&entity) {
+                        self.state
+                            .entities
+                            .set_component(key, "position_x", Value::Float(x.into()));
+                        self.state
+                            .entities
+                            .set_component(key, "position_y", Value::Float(y.into()));
+                        events.push(RuntimeEvent::World(WorldEvent::PositionSet {
+                            entity: key,
+                            x,
+                            y,
+                        }));
+                    }
+                }
+
+                Effect::MoveBy { entity, dx, dy } => {
+                    if let Some(key) = self.state.entities.key_of(&entity) {
+                        // Get current position
+                        let current_x = self
+                            .state
+                            .entities
+                            .get_component(key, "position_x")
+                            .and_then(|v| v.as_float())
+                            .unwrap_or(0.0) as f32;
+                        let current_y = self
+                            .state
+                            .entities
+                            .get_component(key, "position_y")
+                            .and_then(|v| v.as_float())
+                            .unwrap_or(0.0) as f32;
+
+                        let new_x = current_x + dx;
+                        let new_y = current_y + dy;
+
+                        self.state
+                            .entities
+                            .set_component(key, "position_x", Value::Float(new_x.into()));
+                        self.state
+                            .entities
+                            .set_component(key, "position_y", Value::Float(new_y.into()));
+
+                        events.push(RuntimeEvent::World(WorldEvent::EntityMoved {
+                            entity: key,
+                            from_x: current_x,
+                            from_y: current_y,
+                            to_x: new_x,
+                            to_y: new_y,
+                        }));
+                    }
+                }
+
+                Effect::ChangeRoom {
+                    room_id,
+                    spawn_x,
+                    spawn_y,
+                } => {
+                    events.push(RuntimeEvent::World(WorldEvent::RoomChanged {
+                        room_id,
+                        spawn_x,
+                        spawn_y,
+                    }));
+                }
+
+                Effect::SpawnAtPosition {
+                    template_id,
+                    x,
+                    y,
+                } => {
+                    // Spawn the entity and set its position
+                    let key = self.state.entities.spawn(template_id.clone());
+                    self.state
+                        .entities
+                        .set_component(key, "position_x", Value::Float(x.into()));
+                    self.state
+                        .entities
+                        .set_component(key, "position_y", Value::Float(y.into()));
+                    events.push(RuntimeEvent::World(WorldEvent::entity_spawned(
+                        key,
+                        template_id,
+                    )));
+                    events.push(RuntimeEvent::World(WorldEvent::PositionSet {
+                        entity: key,
+                        x,
+                        y,
+                    }));
+                }
+
+                // === Combat effects ===
+
+                Effect::DealDamage {
+                    target,
+                    amount,
+                    source,
+                } => {
+                    if let Some(key) = self.state.entities.key_of(&target) {
+                        // Check if target is invincible
+                        let invincible = self
+                            .state
+                            .entities
+                            .get_component(key, "invincible")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false);
+
+                        if !invincible {
+                            // Get current health
+                            let current_hp = self
+                                .state
+                                .entities
+                                .get_component(key, "health")
+                                .and_then(|v| v.as_int())
+                                .unwrap_or(0);
+
+                            let new_hp = (current_hp - amount).max(0);
+                            self.state
+                                .entities
+                                .set_component(key, "health", Value::Int(new_hp));
+
+                            events.push(RuntimeEvent::World(WorldEvent::DamageTaken {
+                                entity: key,
+                                amount,
+                                source: source.clone(),
+                                health_remaining: new_hp,
+                            }));
+
+                            // Check for death
+                            if new_hp <= 0 {
+                                events.push(RuntimeEvent::World(WorldEvent::EntityDied {
+                                    entity: key,
+                                    killer: source,
+                                }));
+                            }
+                        }
+                    }
+                }
+
+                Effect::Heal { target, amount } => {
+                    if let Some(key) = self.state.entities.key_of(&target) {
+                        let current_hp = self
+                            .state
+                            .entities
+                            .get_component(key, "health")
+                            .and_then(|v| v.as_int())
+                            .unwrap_or(0);
+
+                        let max_hp = self
+                            .state
+                            .entities
+                            .get_component(key, "max_health")
+                            .and_then(|v| v.as_int())
+                            .unwrap_or(current_hp + amount); // Default to allowing full heal
+
+                        let new_hp = (current_hp + amount).min(max_hp);
+                        self.state
+                            .entities
+                            .set_component(key, "health", Value::Int(new_hp));
+
+                        events.push(RuntimeEvent::World(WorldEvent::Healed {
+                            entity: key,
+                            amount: new_hp - current_hp,
+                            health_now: new_hp,
+                        }));
+                    }
+                }
+
+                Effect::SetInvincible { entity, duration_ms } => {
+                    if let Some(key) = self.state.entities.key_of(&entity) {
+                        self.state
+                            .entities
+                            .set_component(key, "invincible", Value::Bool(true));
+                        self.state
+                            .entities
+                            .set_component(key, "invincible_timer", Value::Int(duration_ms as i64));
+
+                        events.push(RuntimeEvent::World(WorldEvent::InvincibilitySet {
+                            entity: key,
+                            duration_ms,
+                        }));
+                    }
+                }
             }
         }
 
@@ -421,7 +632,7 @@ impl Default for GeneralizedRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use engine_systems::System;
+    use blackwing_core::System;
 
     struct EchoSystem;
 
@@ -504,7 +715,7 @@ mod tests {
 
     #[test]
     fn resource_modification() {
-        use engine_primitives::ResourceId;
+        use blackwing_core::ResourceId;
 
         let mut runtime = GeneralizedRuntime::new(12345);
 
@@ -518,7 +729,7 @@ mod tests {
 
     #[test]
     fn fork_runtime() {
-        use engine_primitives::ResourceId;
+        use blackwing_core::ResourceId;
 
         let mut runtime = GeneralizedRuntime::new(12345);
         let gold_id = ResourceId::new("gold");

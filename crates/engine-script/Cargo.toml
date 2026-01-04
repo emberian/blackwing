@@ -5,10 +5,12 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 
+# Script analysis and Rhai execution for the Holdsmith game format.
+# Uses engine-core's GameState model.
+
 [dependencies]
 engine-core = { path = "../engine-core" }
-engine-primitives = { path = "../engine-primitives" }
-engine-world = { path = "../engine-world" }
+blackwing-core = { path = "../blackwing-core" }
 rhai = { workspace = true }
 thiserror = { workspace = true }
 smol_str = { workspace = true }

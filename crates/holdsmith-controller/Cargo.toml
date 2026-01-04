@@ -14,11 +14,8 @@ parallel = ["holdsmith-analyzer/parallel"]
 engine-core = { path = "../engine-core" }
 engine-runtime = { path = "../engine-runtime" }
 engine-script = { path = "../engine-script" }
-engine-bundle = { path = "../engine-bundle" }
-engine-primitives = { path = "../engine-primitives" }
-engine-content = { path = "../engine-content" }
-engine-world = { path = "../engine-world" }
-engine-systems = { path = "../engine-systems" }
+blackwing-core = { path = "../blackwing-core" }
+blackwing-bundle = { path = "../blackwing-bundle" }
 holdsmith-parser = { path = "../holdsmith-parser" }
 holdsmith-compiler = { path = "../holdsmith-compiler" }
 holdsmith-analyzer = { path = "../holdsmith-analyzer", default-features = false }

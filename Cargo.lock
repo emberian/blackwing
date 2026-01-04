@@ -47,6 +47,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -363,6 +369,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "blackwing-bundle"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "blackwing-core",
+ "blackwing-tilemap",
+ "indexmap 2.12.1",
+ "rustc-hash 2.1.1",
+ "serde",
+ "smol_str",
+ "tempfile",
+ "thiserror 2.0.17",
+ "toml 0.8.2",
+ "zip",
+]
+
+[[package]]
+name = "blackwing-core"
+version = "0.1.0"
+dependencies = [
+ "indexmap 2.12.1",
+ "proptest",
+ "rhai",
+ "rustc-hash 2.1.1",
+ "serde",
+ "serde_json",
+ "slotmap",
+ "smallvec",
+ "smol_str",
+ "thiserror 2.0.17",
+]
+
+[[package]]
 name = "blackwing-game"
 version = "0.1.0"
 dependencies = [
@@ -371,16 +410,71 @@ dependencies = [
 ]
 
 [[package]]
+name = "blackwing-game-app"
+version = "0.1.0"
+dependencies = [
+ "blackwing-ui",
+ "blackwing-wasm",
+ "console_error_panic_hook",
+ "getrandom 0.3.4",
+ "gloo-timers",
+ "gloo-utils",
+ "instant",
+ "js-sys",
+ "leptos",
+ "leptos_meta",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "tracing",
+ "tracing-wasm",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-bindgen-test",
+ "web-sys",
+]
+
+[[package]]
+name = "blackwing-renderer"
+version = "0.1.0"
+dependencies = [
+ "blackwing-core",
+ "blackwing-tilemap",
+ "engine-script",
+ "macroquad",
+ "rustc-hash 2.1.1",
+ "smol_str",
+]
+
+[[package]]
+name = "blackwing-tilemap"
+version = "0.1.0"
+dependencies = [
+ "indexmap 2.12.1",
+ "proptest",
+ "serde",
+ "smol_str",
+]
+
+[[package]]
+name = "blackwing-ui"
+version = "0.1.0"
+dependencies = [
+ "gloo-timers",
+ "leptos",
+ "serde",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "blackwing-wasm"
 version = "0.1.0"
 dependencies = [
+ "blackwing-bundle",
+ "blackwing-core",
  "console_error_panic_hook",
- "engine-bundle",
- "engine-content",
- "engine-primitives",
  "engine-runtime",
- "engine-systems",
- "engine-world",
  "getrandom 0.3.4",
  "js-sys",
  "serde",
@@ -673,6 +767,12 @@ name = "collection_literals"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2550f75b8cfac212855f6b1885455df8eaee8fe8e246b647d69146142e016084"
+
+[[package]]
+name = "color_quant"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d7b894f5411737b7867f4827955924d7c254fc9f4d91a6aad6b097804b1018b"
 
 [[package]]
 name = "colorchoice"
@@ -1279,34 +1379,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66b7e2430c6dff6a955451e2cfc438f09cea1965a9d6f87f7e3b90decc014099"
 
 [[package]]
-name = "engine-bundle"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "engine-content",
- "engine-primitives",
- "engine-runtime",
- "engine-systems",
- "engine-world",
- "indexmap 2.12.1",
- "serde",
- "smol_str",
- "thiserror 2.0.17",
- "toml 0.8.2",
-]
-
-[[package]]
-name = "engine-content"
-version = "0.1.0"
-dependencies = [
- "engine-primitives",
- "indexmap 2.12.1",
- "rustc-hash 2.1.1",
- "serde",
- "smol_str",
-]
-
-[[package]]
 name = "engine-core"
 version = "0.1.0"
 dependencies = [
@@ -1321,24 +1393,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "engine-primitives"
-version = "0.1.0"
-dependencies = [
- "serde",
- "smallvec",
- "smol_str",
-]
-
-[[package]]
 name = "engine-runtime"
 version = "0.1.0"
 dependencies = [
- "engine-content",
+ "blackwing-bundle",
+ "blackwing-core",
  "engine-core",
- "engine-primitives",
  "engine-script",
- "engine-systems",
- "engine-world",
  "indexmap 2.12.1",
  "rustc-hash 2.1.1",
  "serde",
@@ -1350,40 +1411,13 @@ dependencies = [
 name = "engine-script"
 version = "0.1.0"
 dependencies = [
+ "blackwing-core",
  "engine-core",
- "engine-primitives",
- "engine-world",
  "indexmap 2.12.1",
  "rhai",
  "rustc-hash 2.1.1",
  "smol_str",
  "thiserror 2.0.17",
-]
-
-[[package]]
-name = "engine-systems"
-version = "0.1.0"
-dependencies = [
- "engine-primitives",
- "engine-world",
- "indexmap 2.12.1",
- "rhai",
- "rustc-hash 2.1.1",
- "serde",
- "smol_str",
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "engine-world"
-version = "0.1.0"
-dependencies = [
- "engine-primitives",
- "indexmap 2.12.1",
- "rustc-hash 2.1.1",
- "serde",
- "slotmap",
- "smol_str",
 ]
 
 [[package]]
@@ -1520,6 +1554,22 @@ name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
+
+[[package]]
+name = "foldhash"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
+
+[[package]]
+name = "fontdue"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e57e16b3fe8ff4364c0661fdaac543fb38b29ea9bc9c2f45612d90adf931d2b"
+dependencies = [
+ "hashbrown 0.15.5",
+ "ttf-parser",
+]
 
 [[package]]
 name = "foreign-types"
@@ -1857,6 +1907,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glam"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e05e7e6723e3455f4818c7b26e855439f7546cf617ef669d1adedb8669e5cb9"
+
+[[package]]
 name = "glib"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2058,6 +2114,17 @@ checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
 
 [[package]]
 name = "hashbrown"
+version = "0.15.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
+dependencies = [
+ "allocator-api2",
+ "equivalent",
+ "foldhash",
+]
+
+[[package]]
+name = "hashbrown"
 version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
@@ -2105,6 +2172,7 @@ dependencies = [
 name = "holdsmith-app"
 version = "0.1.0"
 dependencies = [
+ "blackwing-ui",
  "console_error_panic_hook",
  "getrandom 0.3.4",
  "gloo-file",
@@ -2155,6 +2223,8 @@ dependencies = [
 name = "holdsmith-controller"
 version = "0.1.0"
 dependencies = [
+ "blackwing-bundle",
+ "blackwing-core",
  "engine-core",
  "engine-runtime",
  "engine-script",
@@ -2475,6 +2545,19 @@ checksum = "3acae9609540aa318d1bc588455225fb2085b9ed0c4f6bd0d9d5bcd86f1a0344"
 dependencies = [
  "icu_normalizer",
  "icu_properties",
+]
+
+[[package]]
+name = "image"
+version = "0.24.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5690139d2f55868e080017335e4b94cb7414274c74f1669c84fb5feba2c9f69d"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "color_quant",
+ "num-traits",
+ "png",
 ]
 
 [[package]]
@@ -3024,6 +3107,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
 
 [[package]]
+name = "macroquad"
+version = "0.4.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2befbae373456143ef55aa93a73594d080adfb111dc32ec96a1123a3e4ff4ae"
+dependencies = [
+ "fontdue",
+ "glam",
+ "image",
+ "macroquad_macro",
+ "miniquad",
+ "quad-rand",
+]
+
+[[package]]
+name = "macroquad_macro"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64b1d96218903768c1ce078b657c0d5965465c95a60d2682fd97443c9d2483dd"
+
+[[package]]
+name = "malloc_buf"
+version = "0.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "62bb907fe88d54d8d9ce32a3cceab4218ed2f6b7d35617cafe9adf84e43919cb"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "manyhow"
 version = "0.11.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3124,6 +3236,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "miniquad"
+version = "0.4.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fb3e758e46dbc45716a8a49ca9edc54b15bcca826277e80b1f690708f67f9e3"
+dependencies = [
+ "libc",
+ "ndk-sys 0.2.2",
+ "objc-rs",
+ "winapi",
+]
+
+[[package]]
 name = "miniz_oxide"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3174,7 +3298,7 @@ dependencies = [
  "bitflags 2.10.0",
  "jni-sys",
  "log",
- "ndk-sys",
+ "ndk-sys 0.6.0+11769913",
  "num_enum",
  "raw-window-handle",
  "thiserror 1.0.69",
@@ -3185,6 +3309,12 @@ name = "ndk-context"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27b02d87554356db9e9a873add8782d4ea6e3e58ea071a9adb9a2e8ddb884a8b"
+
+[[package]]
+name = "ndk-sys"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1bcdd74c20ad5d95aacd60ef9ba40fdf77f767051040541df557b7a9b2a2121"
 
 [[package]]
 name = "ndk-sys"
@@ -3300,6 +3430,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.113",
+]
+
+[[package]]
+name = "objc-rs"
+version = "0.2.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64a1e7069a2525126bf12a9f1f7916835fafade384fb27cabf698e745e2a1eb8"
+dependencies = [
+ "malloc_buf",
 ]
 
 [[package]]
@@ -4043,6 +4182,12 @@ dependencies = [
  "tempfile",
  "unarray",
 ]
+
+[[package]]
+name = "quad-rand"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a651516ddc9168ebd67b24afd085a718be02f8858fe406591b013d101ce2f40"
 
 [[package]]
 name = "quick-error"
@@ -5290,7 +5435,7 @@ dependencies = [
  "log",
  "ndk",
  "ndk-context",
- "ndk-sys",
+ "ndk-sys 0.6.0+11769913",
  "objc2",
  "objc2-app-kit",
  "objc2-foundation",
@@ -6088,6 +6233,12 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
+
+[[package]]
+name = "ttf-parser"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c591d83f69777866b9126b24c6dd9a18351f177e49d625920d19f989fd31cf8"
 
 [[package]]
 name = "typed-builder"

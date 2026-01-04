@@ -9,11 +9,8 @@ authors.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-engine-primitives = { path = "../engine-primitives" }
-engine-world = { path = "../engine-world" }
-engine-systems = { path = "../engine-systems" }
-engine-content = { path = "../engine-content" }
-engine-bundle = { path = "../engine-bundle" }
+blackwing-core = { path = "../blackwing-core" }
+blackwing-bundle = { path = "../blackwing-bundle" }
 engine-runtime = { path = "../engine-runtime" }
 serde = { workspace = true }
 serde_json = { workspace = true }

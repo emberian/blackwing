@@ -10,7 +10,7 @@ use engine_core::{
     CardDef, CardId, ContentRegistry, Effect, FlagId, GameState, ResourceId, Scene, SceneId,
     TagCategoryId, TagId, TagProvider, Value,
 };
-use engine_primitives::Rng;
+use blackwing_core::Rng;
 use engine_script::ScriptExecutor;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;

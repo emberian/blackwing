@@ -28,8 +28,7 @@
 
 use std::sync::{Arc, Mutex};
 
-use engine_primitives::Value;
-use engine_world::WorldState;
+use blackwing_core::{Value, WorldState};
 use rhai::{Dynamic, Engine, ImmutableString};
 use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
@@ -99,13 +98,99 @@ pub enum WorldEffect {
         title: SmolStr,
         description: SmolStr,
     },
+
+    // === Spatial effects (for tilemap-based games) ===
+
+    /// Set an entity's position
+    SetPosition {
+        kind: SmolStr,
+        id: SmolStr,
+        x: f32,
+        y: f32,
+    },
+    /// Move an entity by a delta
+    MoveBy {
+        kind: SmolStr,
+        id: SmolStr,
+        dx: f32,
+        dy: f32,
+    },
+    /// Change the current room
+    ChangeRoom {
+        room_id: SmolStr,
+        spawn_x: f32,
+        spawn_y: f32,
+    },
+    /// Spawn an entity at a position
+    SpawnAtPosition {
+        kind: SmolStr,
+        id: SmolStr,
+        x: f32,
+        y: f32,
+    },
+
+    // === Combat effects ===
+
+    /// Deal damage to an entity
+    DealDamage {
+        target_kind: SmolStr,
+        target_id: SmolStr,
+        amount: i64,
+        source_kind: Option<SmolStr>,
+        source_id: Option<SmolStr>,
+    },
+    /// Heal an entity
+    Heal {
+        target_kind: SmolStr,
+        target_id: SmolStr,
+        amount: i64,
+    },
+    /// Set entity invincibility
+    SetInvincible {
+        kind: SmolStr,
+        id: SmolStr,
+        duration_ms: u32,
+    },
+
+    // === Hitbox effects ===
+
+    /// Spawn a hitbox entity with all properties at once
+    SpawnHitbox {
+        id: SmolStr,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        damage: i64,
+        lifetime_ms: i64,
+        owner: Option<SmolStr>,
+    },
+
+    /// Spawn a projectile entity
+    SpawnProjectile {
+        id: SmolStr,
+        x: f32,
+        y: f32,
+        direction: SmolStr,
+        speed: f32,
+        damage: i64,
+        lifetime_ms: i64,
+        owner: Option<SmolStr>,
+    },
 }
 
 /// Shared state for collecting effects during script execution.
 #[derive(Clone)]
 pub struct WorldScriptState {
-    effects: Arc<Mutex<Vec<WorldEffect>>>,
+    /// Collected effects from script execution.
+    pub effects: Arc<Mutex<Vec<WorldEffect>>>,
     rng_state: Arc<Mutex<u64>>,
+    /// Current entity context (for on_tick scripts).
+    current_entity: Arc<Mutex<Option<String>>>,
+    /// Current frame delta time in milliseconds.
+    delta_ms: Arc<Mutex<u32>>,
+    /// Counter for generating unique IDs.
+    unique_counter: Arc<Mutex<u64>>,
 }
 
 impl WorldScriptState {
@@ -113,7 +198,37 @@ impl WorldScriptState {
         Self {
             effects: Arc::new(Mutex::new(Vec::new())),
             rng_state: Arc::new(Mutex::new(rng_seed)),
+            current_entity: Arc::new(Mutex::new(None)),
+            delta_ms: Arc::new(Mutex::new(0)),
+            unique_counter: Arc::new(Mutex::new(0)),
         }
+    }
+
+    /// Set the current entity context (call before executing an on_tick script).
+    pub fn set_entity_context(&self, entity_id: Option<String>) {
+        *self.current_entity.lock().unwrap() = entity_id;
+    }
+
+    /// Set the current frame delta time (call at start of frame).
+    pub fn set_delta_ms(&self, delta: u32) {
+        *self.delta_ms.lock().unwrap() = delta;
+    }
+
+    /// Get the current entity context.
+    pub fn get_entity_context(&self) -> Option<String> {
+        self.current_entity.lock().unwrap().clone()
+    }
+
+    /// Get the current delta time.
+    pub fn get_delta_ms(&self) -> u32 {
+        *self.delta_ms.lock().unwrap()
+    }
+
+    /// Generate a unique ID with the given prefix.
+    pub fn generate_unique_id(&self, prefix: &str) -> String {
+        let mut counter = self.unique_counter.lock().unwrap();
+        *counter += 1;
+        format!("{}_{}", prefix, *counter)
     }
 
     pub fn into_effects(self) -> Vec<WorldEffect> {
@@ -235,6 +350,26 @@ pub fn register_world_bindings(
     snapshot: Arc<WorldSnapshot>,
     state: WorldScriptState,
 ) {
+    // === Context Functions (for on_tick scripts) ===
+
+    // Get the current entity this script is running for
+    let st = state.clone();
+    engine.register_fn("current_entity", move || -> ImmutableString {
+        st.get_entity_context()
+            .map(|s| ImmutableString::from(s))
+            .unwrap_or_else(|| "".into())
+    });
+
+    // Get the frame delta time in milliseconds
+    let st = state.clone();
+    engine.register_fn("delta_ms", move || -> i64 { st.get_delta_ms() as i64 });
+
+    // Generate a unique ID with a prefix
+    let st = state.clone();
+    engine.register_fn("unique_id", move |prefix: ImmutableString| -> ImmutableString {
+        st.generate_unique_id(prefix.as_str()).into()
+    });
+
     // === Entity Query Functions ===
 
     // Get entity by qualified ID (e.g., "npc:bob")
@@ -522,12 +657,270 @@ pub fn register_world_bindings(
         let f = (*st >> 11) as f64 / (1u64 << 53) as f64;
         f < probability
     });
+
+    // === Spatial/Tilemap Functions ===
+
+    // Set entity position
+    let st = state.clone();
+    engine.register_fn(
+        "set_position",
+        move |qualified_id: ImmutableString, x: f64, y: f64| {
+            if let Some((kind, id)) = qualified_id.split_once(':') {
+                st.effects.lock().unwrap().push(WorldEffect::SetPosition {
+                    kind: SmolStr::new(kind),
+                    id: SmolStr::new(id),
+                    x: x as f32,
+                    y: y as f32,
+                });
+            }
+        },
+    );
+
+    // Move entity by delta
+    let st = state.clone();
+    engine.register_fn(
+        "move_by",
+        move |qualified_id: ImmutableString, dx: f64, dy: f64| {
+            if let Some((kind, id)) = qualified_id.split_once(':') {
+                st.effects.lock().unwrap().push(WorldEffect::MoveBy {
+                    kind: SmolStr::new(kind),
+                    id: SmolStr::new(id),
+                    dx: dx as f32,
+                    dy: dy as f32,
+                });
+            }
+        },
+    );
+
+    // Change room
+    let st = state.clone();
+    engine.register_fn(
+        "change_room",
+        move |room_id: ImmutableString, spawn_x: f64, spawn_y: f64| {
+            st.effects.lock().unwrap().push(WorldEffect::ChangeRoom {
+                room_id: SmolStr::new(room_id.as_str()),
+                spawn_x: spawn_x as f32,
+                spawn_y: spawn_y as f32,
+            });
+        },
+    );
+
+    // Spawn entity at position
+    let st = state.clone();
+    engine.register_fn(
+        "spawn_at_position",
+        move |kind: ImmutableString, id: ImmutableString, x: f64, y: f64| {
+            st.effects.lock().unwrap().push(WorldEffect::SpawnAtPosition {
+                kind: SmolStr::new(kind.as_str()),
+                id: SmolStr::new(id.as_str()),
+                x: x as f32,
+                y: y as f32,
+            });
+        },
+    );
+
+    // Get entity position_x component (convenience)
+    let snap = snapshot.clone();
+    engine.register_fn("position_x", move |qualified_id: ImmutableString| -> f64 {
+        snap.entities
+            .get(qualified_id.as_str())
+            .and_then(|e| e.components.get("position_x"))
+            .and_then(|d| d.as_float().ok())
+            .unwrap_or(0.0)
+    });
+
+    // Get entity position_y component (convenience)
+    let snap = snapshot.clone();
+    engine.register_fn("position_y", move |qualified_id: ImmutableString| -> f64 {
+        snap.entities
+            .get(qualified_id.as_str())
+            .and_then(|e| e.components.get("position_y"))
+            .and_then(|d| d.as_float().ok())
+            .unwrap_or(0.0)
+    });
+
+    // Distance between two entities
+    let snap = snapshot.clone();
+    engine.register_fn(
+        "distance",
+        move |entity_a: ImmutableString, entity_b: ImmutableString| -> f64 {
+            let get_pos = |id: &str| -> Option<(f64, f64)> {
+                let e = snap.entities.get(id)?;
+                let x = e.components.get("position_x")?.as_float().ok()?;
+                let y = e.components.get("position_y")?.as_float().ok()?;
+                Some((x, y))
+            };
+
+            let Some((ax, ay)) = get_pos(entity_a.as_str()) else {
+                return f64::MAX;
+            };
+            let Some((bx, by)) = get_pos(entity_b.as_str()) else {
+                return f64::MAX;
+            };
+
+            ((bx - ax).powi(2) + (by - ay).powi(2)).sqrt()
+        },
+    );
+
+    // Find entities within radius of a point
+    let snap = snapshot.clone();
+    engine.register_fn(
+        "entities_near",
+        move |x: f64, y: f64, radius: f64| -> rhai::Array {
+            let radius_sq = radius * radius;
+            snap.entities
+                .iter()
+                .filter_map(|(qualified_id, e)| {
+                    let ex = e.components.get("position_x")?.as_float().ok()?;
+                    let ey = e.components.get("position_y")?.as_float().ok()?;
+                    let dist_sq = (ex - x).powi(2) + (ey - y).powi(2);
+                    if dist_sq <= radius_sq {
+                        Some(Dynamic::from(qualified_id.clone()))
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        },
+    );
+
+    // === Hitbox Functions ===
+
+    // Spawn a hitbox at a position with damage and lifetime
+    // Returns the qualified entity ID of the spawned hitbox
+    let st = state.clone();
+    engine.register_fn(
+        "spawn_hitbox",
+        move |x: f64,
+              y: f64,
+              width: f64,
+              height: f64,
+              damage: i64,
+              lifetime_ms: i64,
+              owner: ImmutableString|
+              -> ImmutableString {
+            let id = st.generate_unique_id("hitbox");
+            let qualified = format!("hitbox:{}", id);
+
+            st.effects.lock().unwrap().push(WorldEffect::SpawnHitbox {
+                id: SmolStr::new(&id),
+                x: x as f32,
+                y: y as f32,
+                width: width as f32,
+                height: height as f32,
+                damage,
+                lifetime_ms,
+                owner: if owner.is_empty() {
+                    None
+                } else {
+                    Some(SmolStr::new(owner.as_str()))
+                },
+            });
+
+            qualified.into()
+        },
+    );
+
+    // Spawn a hitbox without owner
+    let st = state.clone();
+    engine.register_fn(
+        "spawn_hitbox_simple",
+        move |x: f64, y: f64, width: f64, height: f64, damage: i64, lifetime_ms: i64| -> ImmutableString {
+            let id = st.generate_unique_id("hitbox");
+            let qualified = format!("hitbox:{}", id);
+
+            st.effects.lock().unwrap().push(WorldEffect::SpawnHitbox {
+                id: SmolStr::new(&id),
+                x: x as f32,
+                y: y as f32,
+                width: width as f32,
+                height: height as f32,
+                damage,
+                lifetime_ms,
+                owner: None,
+            });
+
+            qualified.into()
+        },
+    );
+
+    // === Projectile Functions ===
+
+    // Spawn a projectile at a position with direction and speed
+    // Returns the qualified entity ID of the spawned projectile
+    let st = state.clone();
+    engine.register_fn(
+        "spawn_projectile",
+        move |x: f64,
+              y: f64,
+              direction: ImmutableString,
+              speed: f64,
+              damage: i64,
+              lifetime_ms: i64,
+              owner: ImmutableString|
+              -> ImmutableString {
+            let id = st.generate_unique_id("projectile");
+            let qualified = format!("projectile:{}", id);
+
+            st.effects
+                .lock()
+                .unwrap()
+                .push(WorldEffect::SpawnProjectile {
+                    id: SmolStr::new(&id),
+                    x: x as f32,
+                    y: y as f32,
+                    direction: SmolStr::new(direction.as_str()),
+                    speed: speed as f32,
+                    damage,
+                    lifetime_ms,
+                    owner: if owner.is_empty() {
+                        None
+                    } else {
+                        Some(SmolStr::new(owner.as_str()))
+                    },
+                });
+
+            qualified.into()
+        },
+    );
+
+    // Spawn a projectile without owner
+    let st = state.clone();
+    engine.register_fn(
+        "spawn_projectile_simple",
+        move |x: f64,
+              y: f64,
+              direction: ImmutableString,
+              speed: f64,
+              damage: i64,
+              lifetime_ms: i64|
+              -> ImmutableString {
+            let id = st.generate_unique_id("projectile");
+            let qualified = format!("projectile:{}", id);
+
+            st.effects
+                .lock()
+                .unwrap()
+                .push(WorldEffect::SpawnProjectile {
+                    id: SmolStr::new(&id),
+                    x: x as f32,
+                    y: y as f32,
+                    direction: SmolStr::new(direction.as_str()),
+                    speed: speed as f32,
+                    damage,
+                    lifetime_ms,
+                    owner: None,
+                });
+
+            qualified.into()
+        },
+    );
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use engine_primitives::EntityId;
+    use blackwing_core::EntityId;
 
     fn create_test_world() -> WorldState {
         let mut state = WorldState::new();

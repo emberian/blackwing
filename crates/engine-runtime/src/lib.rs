@@ -18,7 +18,5 @@ pub use runtime::*;
 pub use scene_selector::*;
 pub use tag_provider::*;
 
-// Re-export new engine crates for convenience
-pub use engine_primitives;
-pub use engine_systems;
-pub use engine_world;
+// Re-export blackwing-core for convenience
+pub use blackwing_core;

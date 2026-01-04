@@ -1,0 +1,15 @@
+[package]
+name = "blackwing-renderer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Macroquad-based renderer for Blackwing engine tilemap games"
+
+[dependencies]
+blackwing-core = { path = "../blackwing-core" }
+blackwing-tilemap = { path = "../blackwing-tilemap" }
+engine-script = { path = "../engine-script" }
+macroquad.workspace = true
+rustc-hash.workspace = true
+smol_str.workspace = true

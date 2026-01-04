@@ -1,0 +1,20 @@
+[package]
+name = "blackwing-tilemap"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Tile-based world/map system for Blackwing engine"
+
+[dependencies]
+# Serialization
+serde.workspace = true
+
+# Collections
+indexmap.workspace = true
+
+# Utilities
+smol_str.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true

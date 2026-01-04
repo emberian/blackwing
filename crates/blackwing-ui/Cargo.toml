@@ -1,0 +1,34 @@
+[package]
+name = "blackwing-ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Shared Leptos UI components for Blackwing games"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = []
+hydrate = ["leptos/hydrate"]
+ssr = ["leptos/ssr"]
+
+[dependencies]
+# Leptos
+leptos = { workspace = true }
+
+# WASM
+wasm-bindgen = { workspace = true }
+web-sys = { workspace = true, features = [
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+] }
+
+# Utilities
+gloo-timers = { workspace = true }
+
+# Serialization
+serde = { workspace = true }

@@ -1,0 +1,30 @@
+[package]
+name = "blackwing-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Core engine for Blackwing: ECS, systems, and scripting"
+
+[dependencies]
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Collections
+indexmap.workspace = true
+smallvec.workspace = true
+slotmap.workspace = true
+rustc-hash.workspace = true
+
+# Scripting
+rhai.workspace = true
+
+# Error handling
+thiserror.workspace = true
+
+# Utilities
+smol_str.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
