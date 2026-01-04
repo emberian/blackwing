@@ -231,7 +231,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: 'Salvage from a Cataclysm-era derelict',
     icon: '👻',
     hidden: true,
-    check: (state: GameState) => state.flags['found_derelict_core'] === true || state.flags['derelict_data'] === true,
+    check: (state: GameState) => state.flags['derelict_salvaged'] === true,
   },
   {
     id: id('broke'),

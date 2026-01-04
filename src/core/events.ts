@@ -51,6 +51,13 @@ function meetsRequirements(scenelet: Scenelet, context: EventContext): boolean {
     return false;
   }
   
+  if (scenelet.cooldown > 0) {
+    const cooldownUntil = state.sceneletCooldowns[scenelet.id];
+    if (cooldownUntil !== undefined && state.time.cycle < cooldownUntil) {
+      return false;
+    }
+  }
+  
   if (req.minResources) {
     for (const [key, min] of Object.entries(req.minResources)) {
       const current = state.resources[key as keyof typeof state.resources];
@@ -239,6 +246,23 @@ export function applyEffects(
     newState.chronicle = [...newState.chronicle, entry];
   }
   
+  if (effects.reputation) {
+    const { faction, amount } = effects.reputation;
+    const factionState = newState.world.factions[faction];
+    if (factionState) {
+      newState.world = {
+        ...newState.world,
+        factions: {
+          ...newState.world.factions,
+          [faction]: {
+            ...factionState,
+            reputation: Math.max(-100, Math.min(100, factionState.reputation + amount)),
+          },
+        },
+      };
+    }
+  }
+  
   return newState;
 }
 
@@ -247,5 +271,17 @@ export function createSeededRng(seed: number): () => number {
   return () => {
     state = (state * 1103515245 + 12345) & 0x7fffffff;
     return state / 0x7fffffff;
+  };
+}
+
+export function recordSceneletCooldown(state: GameState, scenelet: Scenelet): GameState {
+  if (scenelet.cooldown <= 0) return state;
+  
+  return {
+    ...state,
+    sceneletCooldowns: {
+      ...state.sceneletCooldowns,
+      [scenelet.id]: state.time.cycle + scenelet.cooldown,
+    },
   };
 }

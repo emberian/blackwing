@@ -171,6 +171,7 @@ export function createRenderer(
             <span class="resource" title="Fuel">⛽${Math.floor(state.resources.fuel)}</span>
             <span class="resource" title="Supplies">📦${Math.floor(state.resources.supplies)}</span>
             <span class="resource" title="Hull">🛡${Math.floor(state.resources.hull)}%</span>
+            <span class="resource" title="Integrity">🧠${Math.floor(state.resources.integrity)}%</span>
           </div>
           <button class="settings-btn" data-action="settings" title="Settings">⚙</button>
         </div>

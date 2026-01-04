@@ -320,6 +320,8 @@ export function createInitialState(): GameState {
       contractsFailed: 0,
     },
     
+    sceneletCooldowns: {},
+    
     rngSeed: Date.now(),
     rngState: Date.now(),
   };

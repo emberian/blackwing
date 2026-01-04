@@ -95,7 +95,6 @@ export interface CardEffects {
     readonly fuelEfficiency?: number;
     readonly cargoCapacity?: number;
     readonly journeySpeed?: number;
-    readonly morale?: number;
     readonly integrityMod?: number;
     readonly hullIntegrity?: number;
   };
@@ -316,6 +315,9 @@ export interface GameState {
   
   flags: Record<string, boolean | number | string>;
   stats: GameStats;
+  
+  /** Cooldown tracking: scenelet ID -> cycle when it can next appear */
+  sceneletCooldowns: Record<SceneletId, number>;
   
   rngSeed: number;
   rngState: number;
