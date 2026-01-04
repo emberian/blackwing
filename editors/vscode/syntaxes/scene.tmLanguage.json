@@ -1,0 +1,149 @@
+{
+    "name": "Holdsmith Scene",
+    "scopeName": "source.scene",
+    "patterns": [
+        { "include": "#frontmatter" },
+        { "include": "#passage" },
+        { "include": "#choice" },
+        { "include": "#rhai-block" },
+        { "include": "#comments" }
+    ],
+    "repository": {
+        "frontmatter": {
+            "begin": "^---$",
+            "end": "^---$",
+            "name": "meta.frontmatter.scene",
+            "contentName": "source.yaml.embedded",
+            "patterns": [
+                {
+                    "match": "^(\\w+):",
+                    "captures": {
+                        "1": { "name": "entity.name.tag.yaml" }
+                    }
+                },
+                {
+                    "match": "\"[^\"]*\"",
+                    "name": "string.quoted.double.yaml"
+                }
+            ]
+        },
+        "passage": {
+            "match": "^(#{1,3})\\s+(.+)$",
+            "captures": {
+                "1": { "name": "punctuation.definition.heading.scene" },
+                "2": { "name": "entity.name.section.scene" }
+            },
+            "name": "markup.heading.scene"
+        },
+        "choice": {
+            "begin": "^(\\*)\\s+",
+            "end": "$",
+            "beginCaptures": {
+                "1": { "name": "punctuation.definition.list.scene" }
+            },
+            "name": "meta.choice.scene",
+            "patterns": [
+                { "include": "#choice-condition" },
+                { "include": "#choice-effect" },
+                { "include": "#choice-target" },
+                {
+                    "match": "[^\\[\\]{}->]+",
+                    "name": "string.unquoted.choice-text.scene"
+                }
+            ]
+        },
+        "choice-condition": {
+            "begin": "\\[",
+            "end": "\\]",
+            "name": "meta.condition.scene",
+            "beginCaptures": {
+                "0": { "name": "punctuation.definition.condition.begin.scene" }
+            },
+            "endCaptures": {
+                "0": { "name": "punctuation.definition.condition.end.scene" }
+            },
+            "patterns": [
+                {
+                    "match": "\\b(credits|hull|fuel|morale|supplies)\\b",
+                    "name": "variable.other.resource.scene"
+                },
+                {
+                    "match": "\\b(flag|ship|crew|cargo)\\b",
+                    "name": "keyword.other.scene"
+                },
+                {
+                    "match": "[<>=!]+",
+                    "name": "keyword.operator.comparison.scene"
+                },
+                {
+                    "match": "\\d+",
+                    "name": "constant.numeric.scene"
+                }
+            ]
+        },
+        "choice-effect": {
+            "begin": "\\{",
+            "end": "\\}",
+            "name": "meta.effect.scene",
+            "beginCaptures": {
+                "0": { "name": "punctuation.definition.effect.begin.scene" }
+            },
+            "endCaptures": {
+                "0": { "name": "punctuation.definition.effect.end.scene" }
+            },
+            "patterns": [
+                {
+                    "match": "\\b(credits|hull|fuel|morale|supplies)\\b",
+                    "name": "variable.other.resource.scene"
+                },
+                {
+                    "match": "\\b(flag|damage|add_card|chronicle)\\b",
+                    "name": "keyword.other.scene"
+                },
+                {
+                    "match": "[+\\-=]",
+                    "name": "keyword.operator.assignment.scene"
+                },
+                {
+                    "match": "\\d+",
+                    "name": "constant.numeric.scene"
+                }
+            ]
+        },
+        "choice-target": {
+            "match": "->\\s*(\\w+|END)",
+            "captures": {
+                "0": { "name": "keyword.control.scene" },
+                "1": { "name": "entity.name.tag.scene" }
+            }
+        },
+        "rhai-block": {
+            "begin": "^```rhai$",
+            "end": "^```$",
+            "name": "meta.embedded.block.rhai",
+            "contentName": "source.rhai",
+            "patterns": [
+                {
+                    "match": "\\b(if|else|while|for|fn|let|return|true|false)\\b",
+                    "name": "keyword.control.rhai"
+                },
+                {
+                    "match": "\\b(resource|flag|damage|set_flag|modify_resource)\\b",
+                    "name": "support.function.rhai"
+                },
+                {
+                    "match": "\"[^\"]*\"",
+                    "name": "string.quoted.double.rhai"
+                },
+                {
+                    "match": "\\d+",
+                    "name": "constant.numeric.rhai"
+                }
+            ]
+        },
+        "comments": {
+            "match": "//.*$",
+            "name": "comment.line.double-slash.scene"
+        }
+    }
+}
