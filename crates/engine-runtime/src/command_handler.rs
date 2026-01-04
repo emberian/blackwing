@@ -1,11 +1,174 @@
 use engine_core::{
-    CardInstanceId, ChronicleEntry, ChronicleEntryId, Command, Effect, Event, GameConfig,
-    GameSchema, GameState, Navigation, ResourceId, SceneId, TagProvider, Tags,
+    CardInstanceId, ChronicleEntry, ChronicleEntryId, Command, Effect, Event, FactionId, FlagId,
+    GameConfig, GameSchema, GameState, Navigation, ResourceId, SceneId, TagProvider, Tags, Value,
 };
 use engine_script::ScriptExecutor;
+use rustc_hash::FxHashMap;
 use smol_str::SmolStr;
 
 use crate::{ContentRegistry, DeckTagProvider, Rng, RuntimeError};
+
+// === Conflict Tracking Types ===
+
+/// Kind of operation performed on a game element
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OpKind {
+    /// Additive delta - commutative, can combine safely
+    Modify,
+    /// Absolute value - non-commutative, order matters
+    Set,
+}
+
+/// Target of an effect operation
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum EffectTarget {
+    Resource(ResourceId),
+    Flag(FlagId),
+    Stat(SmolStr),
+    FactionRep(FactionId),
+}
+
+impl EffectTarget {
+    fn key(&self) -> String {
+        match self {
+            EffectTarget::Resource(id) => format!("res:{}", id),
+            EffectTarget::Flag(id) => format!("flag:{}", id),
+            EffectTarget::Stat(key) => format!("stat:{}", key),
+            EffectTarget::FactionRep(id) => format!("rep:{}", id),
+        }
+    }
+}
+
+/// Records an order-dependent conflict between operations
+#[derive(Debug, Clone)]
+pub struct OrderConflict {
+    pub target: EffectTarget,
+    pub first_op: OpKind,
+    pub second_op: OpKind,
+}
+
+/// Tracks conflicts during effect batch processing (Sui-inspired model)
+#[derive(Debug, Default)]
+pub struct EffectConflicts {
+    /// Targets with multiple additive ops (safe, informational)
+    pub combined: Vec<EffectTarget>,
+    /// Order-dependent conflicts (Set + anything)
+    pub order_conflicts: Vec<OrderConflict>,
+    /// Internal: target key -> (last op kind, target clone)
+    ops: FxHashMap<String, (OpKind, EffectTarget)>,
+}
+
+impl EffectConflicts {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Record an operation on a target, detecting conflicts
+    pub fn record_op(&mut self, target: EffectTarget, kind: OpKind) {
+        let key = target.key();
+        if let Some((prev_kind, prev_target)) = self.ops.get(&key) {
+            // Second operation on same target
+            match (*prev_kind, kind) {
+                (OpKind::Modify, OpKind::Modify) => {
+                    // Commutative - safe to combine
+                    if !self.combined.contains(&target) {
+                        self.combined.push(target.clone());
+                    }
+                }
+                (first, second) => {
+                    // Non-commutative - order conflict
+                    self.order_conflicts.push(OrderConflict {
+                        target: prev_target.clone(),
+                        first_op: first,
+                        second_op: second,
+                    });
+                }
+            }
+        }
+        self.ops.insert(key, (kind, target));
+    }
+
+    /// Returns true if there are any order-dependent conflicts
+    pub fn has_order_conflicts(&self) -> bool {
+        !self.order_conflicts.is_empty()
+    }
+
+    /// Returns true if no conflicts of any kind
+    pub fn is_clean(&self) -> bool {
+        self.combined.is_empty() && self.order_conflicts.is_empty()
+    }
+}
+
+// === Incremental State for Effect Batches ===
+
+/// Accumulates state changes during effect batch processing
+/// so later effects see results of earlier effects
+struct IncrementalState<'a> {
+    base: &'a GameState,
+    resource_deltas: FxHashMap<ResourceId, i64>,
+    flag_overrides: FxHashMap<FlagId, Value>,
+    stat_deltas: FxHashMap<SmolStr, i64>,
+    rep_deltas: FxHashMap<FactionId, i64>,
+}
+
+impl<'a> IncrementalState<'a> {
+    fn new(base: &'a GameState) -> Self {
+        Self {
+            base,
+            resource_deltas: FxHashMap::default(),
+            flag_overrides: FxHashMap::default(),
+            stat_deltas: FxHashMap::default(),
+            rep_deltas: FxHashMap::default(),
+        }
+    }
+
+    fn resource(&self, id: &ResourceId) -> i64 {
+        let base_value = self.base.resource(id);
+        let delta = self.resource_deltas.get(id).copied().unwrap_or(0);
+        base_value + delta
+    }
+
+    fn apply_resource_delta(&mut self, id: &ResourceId, delta: i64) {
+        *self.resource_deltas.entry(id.clone()).or_insert(0) += delta;
+    }
+
+    fn set_resource(&mut self, id: &ResourceId, value: i64) {
+        let base_value = self.base.resource(id);
+        self.resource_deltas.insert(id.clone(), value - base_value);
+    }
+
+    fn flag(&self, id: &FlagId) -> Value {
+        self.flag_overrides
+            .get(id)
+            .cloned()
+            .or_else(|| self.base.flags.get(id).cloned())
+            .unwrap_or(Value::Null)
+    }
+
+    fn set_flag(&mut self, id: FlagId, value: Value) {
+        self.flag_overrides.insert(id, value);
+    }
+
+    fn stat(&self, key: &str) -> i64 {
+        let base_value = self.base.stat(key);
+        let delta = self.stat_deltas.get(key).copied().unwrap_or(0);
+        base_value + delta
+    }
+
+    fn apply_stat_delta(&mut self, key: &SmolStr, delta: i64) {
+        *self.stat_deltas.entry(key.clone()).or_insert(0) += delta;
+    }
+
+    fn faction_reputation(&self, id: &FactionId) -> i64 {
+        let base_value = self.base.faction_reputation(id);
+        let delta = self.rep_deltas.get(id).copied().unwrap_or(0);
+        base_value + delta
+    }
+
+    fn apply_rep_delta(&mut self, id: &FactionId, delta: i64) {
+        *self.rep_deltas.entry(id.clone()).or_insert(0) += delta;
+    }
+}
 
 pub struct CommandHandler<'a> {
     schema: &'a GameSchema,
@@ -91,9 +254,7 @@ impl<'a> CommandHandler<'a> {
 
             Command::ModuleUninstall { slot_id } => self.handle_module_uninstall(state, slot_id),
 
-            Command::ContractAccept { card_id } => {
-                self.handle_contract_accept(state, card_id, rng)
-            }
+            Command::ContractAccept { card_id } => self.handle_contract_accept(state, card_id, rng),
 
             Command::ContractComplete { instance_id } => {
                 self.handle_contract_complete(state, instance_id, rng)
@@ -116,7 +277,8 @@ impl<'a> CommandHandler<'a> {
             Command::Refuel { amount } => self.handle_refuel(state, *amount, rng),
 
             Command::ApplyEffects { effects, reason } => {
-                self.apply_effects(state, effects, reason, rng)
+                let (events, _conflicts) = self.apply_effects(state, effects, reason, rng)?;
+                Ok(events)
             }
 
             Command::AdvanceCycle => Ok(vec![Event::cycle_advanced(state.cycle + 1)]),
@@ -200,11 +362,13 @@ impl<'a> CommandHandler<'a> {
             *rng = Rng::new(script_result.rng_state);
 
             // Apply the collected effects
-            let effect_events = self.apply_effects(state, &script_result.effects, "choice", rng)?;
+            let (effect_events, _conflicts) =
+                self.apply_effects(state, &script_result.effects, "choice", rng)?;
             events.extend(effect_events);
         } else {
             // Use native effects
-            let effect_events = self.apply_effects(state, &choice.effects, "choice", rng)?;
+            let (effect_events, _conflicts) =
+                self.apply_effects(state, &choice.effects, "choice", rng)?;
             events.extend(effect_events);
         }
 
@@ -229,14 +393,18 @@ impl<'a> CommandHandler<'a> {
         effects: &[Effect],
         reason: &str,
         rng: &mut Rng,
-    ) -> Result<Vec<Event>, RuntimeError> {
+    ) -> Result<(Vec<Event>, EffectConflicts), RuntimeError> {
         let mut events = Vec::new();
+        let mut conflicts = EffectConflicts::new();
+        let mut incremental = IncrementalState::new(state);
 
         for effect in effects {
             match effect {
                 Effect::ModifyResource { resource, delta } => {
-                    let old_value = state.resource(resource);
+                    conflicts.record_op(EffectTarget::Resource(resource.clone()), OpKind::Modify);
+                    let old_value = incremental.resource(resource);
                     let new_value = old_value + delta;
+                    incremental.apply_resource_delta(resource, *delta);
                     events.push(Event::resource_changed(
                         resource.clone(),
                         old_value,
@@ -246,7 +414,9 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::SetResource { resource, value } => {
-                    let old_value = state.resource(resource);
+                    conflicts.record_op(EffectTarget::Resource(resource.clone()), OpKind::Set);
+                    let old_value = incremental.resource(resource);
+                    incremental.set_resource(resource, *value);
                     events.push(Event::resource_changed(
                         resource.clone(),
                         old_value,
@@ -256,7 +426,9 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::SetFlag { flag, value } => {
-                    let old_value = state.flags.get(flag).cloned();
+                    conflicts.record_op(EffectTarget::Flag(flag.clone()), OpKind::Set);
+                    let old_value = Some(incremental.flag(flag));
+                    incremental.set_flag(flag.clone(), value.clone());
                     events.push(Event::flag_set(flag.clone(), old_value, value.clone()));
                 }
 
@@ -299,8 +471,10 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::ModifyFactionReputation { faction, delta } => {
-                    let old_value = state.faction_reputation(faction);
+                    conflicts.record_op(EffectTarget::FactionRep(faction.clone()), OpKind::Modify);
+                    let old_value = incremental.faction_reputation(faction);
                     let new_value = (old_value + delta).clamp(-100, 100);
+                    incremental.apply_rep_delta(faction, new_value - old_value);
                     events.push(Event::FactionReputationChanged {
                         faction: faction.clone(),
                         old_value,
@@ -328,8 +502,10 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::Damage { resource, amount } => {
-                    let old_value = state.resource(resource);
+                    conflicts.record_op(EffectTarget::Resource(resource.clone()), OpKind::Modify);
+                    let old_value = incremental.resource(resource);
                     let new_value = old_value - amount;
+                    incremental.apply_resource_delta(resource, -*amount);
                     events.push(Event::resource_changed(
                         resource.clone(),
                         old_value,
@@ -367,8 +543,10 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::ModifyStat { key, delta } => {
-                    let old_value = state.stat(key);
+                    conflicts.record_op(EffectTarget::Stat(key.clone()), OpKind::Modify);
+                    let old_value = incremental.stat(key);
                     let new_value = old_value + delta;
+                    incremental.apply_stat_delta(key, *delta);
                     events.push(Event::StatChanged {
                         key: key.clone(),
                         new_value,
@@ -376,8 +554,14 @@ impl<'a> CommandHandler<'a> {
                 }
 
                 Effect::Compound { effects: inner } => {
-                    let inner_events = self.apply_effects(state, inner, reason, rng)?;
+                    let (inner_events, inner_conflicts) =
+                        self.apply_effects(state, inner, reason, rng)?;
                     events.extend(inner_events);
+                    // Merge inner conflicts
+                    conflicts.combined.extend(inner_conflicts.combined);
+                    conflicts
+                        .order_conflicts
+                        .extend(inner_conflicts.order_conflicts);
                 }
             }
         }
@@ -386,7 +570,7 @@ impl<'a> CommandHandler<'a> {
             new_state: rng.state(),
         });
 
-        Ok(events)
+        Ok((events, conflicts))
     }
 
     // === Trade Handlers ===
@@ -398,12 +582,12 @@ impl<'a> CommandHandler<'a> {
         quantity: u32,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let card_def = self
-            .registry
-            .get_card(card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
-                card_id: card_id.clone(),
-            })?;
+        let card_def =
+            self.registry
+                .get_card(card_id)
+                .ok_or_else(|| RuntimeError::CardNotFound {
+                    card_id: card_id.clone(),
+                })?;
 
         // Check if available at current port
         let location = state.location.as_ref().ok_or(RuntimeError::NotAtPort)?;
@@ -466,20 +650,17 @@ impl<'a> CommandHandler<'a> {
         instance_id: &CardInstanceId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance = state
-            .cards
-            .instances
-            .get(instance_id)
-            .ok_or_else(|| RuntimeError::CardInstanceNotFound {
+        let instance = state.cards.instances.get(instance_id).ok_or_else(|| {
+            RuntimeError::CardInstanceNotFound {
                 instance_id: instance_id.clone(),
-            })?;
+            }
+        })?;
 
-        let card_def = self
-            .registry
-            .get_card(&instance.card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
+        let card_def = self.registry.get_card(&instance.card_id).ok_or_else(|| {
+            RuntimeError::CardNotFound {
                 card_id: instance.card_id.clone(),
-            })?;
+            }
+        })?;
 
         // Calculate sell price (70% of buy price, adjusted by condition)
         let base_price = card_def.base_value.unwrap_or(10);
@@ -561,27 +742,27 @@ impl<'a> CommandHandler<'a> {
         instance_id: &CardInstanceId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance = state
-            .cards
-            .instances
-            .get(instance_id)
-            .ok_or_else(|| RuntimeError::CardInstanceNotFound {
+        let instance = state.cards.instances.get(instance_id).ok_or_else(|| {
+            RuntimeError::CardInstanceNotFound {
                 instance_id: instance_id.clone(),
-            })?;
+            }
+        })?;
 
-        let card_def = self
-            .registry
-            .get_card(&instance.card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
+        let card_def = self.registry.get_card(&instance.card_id).ok_or_else(|| {
+            RuntimeError::CardNotFound {
                 card_id: instance.card_id.clone(),
-            })?;
+            }
+        })?;
 
         let upgrade_target = card_def
             .upgrades_to
             .as_ref()
             .ok_or(RuntimeError::CannotUpgrade)?;
 
-        let upgrade_cost = card_def.upgrade_cost.as_ref().ok_or(RuntimeError::CannotUpgrade)?;
+        let upgrade_cost = card_def
+            .upgrade_cost
+            .as_ref()
+            .ok_or(RuntimeError::CannotUpgrade)?;
 
         // Check credits
         let credits_id = ResourceId::new("credits");
@@ -628,20 +809,17 @@ impl<'a> CommandHandler<'a> {
         instance_id: &CardInstanceId,
         slot_id: &engine_core::SlotId,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance = state
-            .cards
-            .instances
-            .get(instance_id)
-            .ok_or_else(|| RuntimeError::CardInstanceNotFound {
+        let instance = state.cards.instances.get(instance_id).ok_or_else(|| {
+            RuntimeError::CardInstanceNotFound {
                 instance_id: instance_id.clone(),
-            })?;
+            }
+        })?;
 
-        let card_def = self
-            .registry
-            .get_card(&instance.card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
+        let card_def = self.registry.get_card(&instance.card_id).ok_or_else(|| {
+            RuntimeError::CardNotFound {
                 card_id: instance.card_id.clone(),
-            })?;
+            }
+        })?;
 
         // Check it's a module type
         if card_def.card_type.as_str() != "module" {
@@ -668,12 +846,13 @@ impl<'a> CommandHandler<'a> {
         state: &GameState,
         slot_id: &engine_core::SlotId,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance_id = state
-            .equipped_modules
-            .get(slot_id)
-            .ok_or_else(|| RuntimeError::SlotEmpty {
-                slot_id: slot_id.clone(),
-            })?;
+        let instance_id =
+            state
+                .equipped_modules
+                .get(slot_id)
+                .ok_or_else(|| RuntimeError::SlotEmpty {
+                    slot_id: slot_id.clone(),
+                })?;
 
         Ok(vec![Event::ModuleUnequipped {
             slot_id: slot_id.clone(),
@@ -689,12 +868,12 @@ impl<'a> CommandHandler<'a> {
         card_id: &engine_core::CardId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let card_def = self
-            .registry
-            .get_card(card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
-                card_id: card_id.clone(),
-            })?;
+        let card_def =
+            self.registry
+                .get_card(card_id)
+                .ok_or_else(|| RuntimeError::CardNotFound {
+                    card_id: card_id.clone(),
+                })?;
 
         if card_def.card_type.as_str() != "contract" {
             return Err(RuntimeError::NotAContract {
@@ -720,20 +899,17 @@ impl<'a> CommandHandler<'a> {
         instance_id: &CardInstanceId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance = state
-            .cards
-            .instances
-            .get(instance_id)
-            .ok_or_else(|| RuntimeError::CardInstanceNotFound {
+        let instance = state.cards.instances.get(instance_id).ok_or_else(|| {
+            RuntimeError::CardInstanceNotFound {
                 instance_id: instance_id.clone(),
-            })?;
+            }
+        })?;
 
-        let card_def = self
-            .registry
-            .get_card(&instance.card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
+        let card_def = self.registry.get_card(&instance.card_id).ok_or_else(|| {
+            RuntimeError::CardNotFound {
                 card_id: instance.card_id.clone(),
-            })?;
+            }
+        })?;
 
         let terms = card_def
             .contract_terms
@@ -789,7 +965,10 @@ impl<'a> CommandHandler<'a> {
         }
 
         // Remove contract
-        events.push(Event::card_removed(instance_id.clone(), "contract complete"));
+        events.push(Event::card_removed(
+            instance_id.clone(),
+            "contract complete",
+        ));
 
         // Grant rewards
         for (resource_id, &amount) in &terms.reward {
@@ -821,13 +1000,11 @@ impl<'a> CommandHandler<'a> {
         instance_id: &CardInstanceId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let instance = state
-            .cards
-            .instances
-            .get(instance_id)
-            .ok_or_else(|| RuntimeError::CardInstanceNotFound {
+        let instance = state.cards.instances.get(instance_id).ok_or_else(|| {
+            RuntimeError::CardInstanceNotFound {
                 instance_id: instance_id.clone(),
-            })?;
+            }
+        })?;
 
         let card_def = self.registry.get_card(&instance.card_id);
 
@@ -889,12 +1066,12 @@ impl<'a> CommandHandler<'a> {
         card_id: &engine_core::CardId,
         rng: &mut Rng,
     ) -> Result<Vec<Event>, RuntimeError> {
-        let card_def = self
-            .registry
-            .get_card(card_id)
-            .ok_or_else(|| RuntimeError::CardNotFound {
-                card_id: card_id.clone(),
-            })?;
+        let card_def =
+            self.registry
+                .get_card(card_id)
+                .ok_or_else(|| RuntimeError::CardNotFound {
+                    card_id: card_id.clone(),
+                })?;
 
         if card_def.card_type.as_str() != "crew" {
             return Err(RuntimeError::NotACrew {
@@ -1000,7 +1177,12 @@ impl<'a> CommandHandler<'a> {
         let new_hull = (current_hull + amount).min(max_hull);
 
         let mut events = vec![
-            Event::resource_changed(credits_id, current_credits, current_credits - cost, "repair"),
+            Event::resource_changed(
+                credits_id,
+                current_credits,
+                current_credits - cost,
+                "repair",
+            ),
             Event::resource_changed(hull_id, current_hull, new_hull, "repair"),
         ];
 
@@ -1074,7 +1256,12 @@ impl<'a> CommandHandler<'a> {
         let current_fuel = state.resource(&fuel_id);
 
         let mut events = vec![
-            Event::resource_changed(credits_id, current_credits, current_credits - cost, "refuel"),
+            Event::resource_changed(
+                credits_id,
+                current_credits,
+                current_credits - cost,
+                "refuel",
+            ),
             Event::resource_changed(fuel_id, current_fuel, current_fuel + amount, "refuel"),
         ];
 
@@ -1110,7 +1297,8 @@ impl<'a> CommandHandler<'a> {
         // Convert collected effects to events
         let mut events = Vec::new();
         if !script_result.effects.is_empty() {
-            let effect_events = self.apply_effects(state, &script_result.effects, reason, rng)?;
+            let (effect_events, _conflicts) =
+                self.apply_effects(state, &script_result.effects, reason, rng)?;
             events.extend(effect_events);
         }
 

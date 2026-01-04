@@ -1,6 +1,11 @@
-use engine_core::{Command, Event, GameConfig, GameSchema, GameState};
+use engine_core::{Command, Event, GameConfig, GameSchema, GameState, LocationId, ResourceId};
 
-use crate::{CommandHandler, ContentRegistry, Rng, RuntimeError};
+use crate::{
+    journey::{
+        calculate_fuel_efficiency, process_cargo_decay, process_journey_wear, tick_contract_timers,
+    },
+    CommandHandler, ContentRegistry, JourneyState, Rng, RuntimeError,
+};
 
 pub struct Runtime<'a> {
     schema: &'a GameSchema,
@@ -9,6 +14,7 @@ pub struct Runtime<'a> {
     state: GameState,
     event_log: Vec<Event>,
     rng: Rng,
+    journey: Option<JourneyState>,
 }
 
 impl<'a> Runtime<'a> {
@@ -30,6 +36,7 @@ impl<'a> Runtime<'a> {
             state,
             event_log: Vec::new(),
             rng: Rng::new(seed),
+            journey: None,
         }
     }
 
@@ -94,6 +101,121 @@ impl<'a> Runtime<'a> {
             state: self.state.clone(),
             event_log: self.event_log.clone(),
             rng: Rng::new(self.rng.state()),
+            journey: self.journey.clone(),
         }
+    }
+
+    // === Journey Methods ===
+
+    /// Start a journey to a destination
+    pub fn start_journey(
+        &mut self,
+        destination: LocationId,
+        event_count: u32,
+    ) -> Result<Vec<Event>, RuntimeError> {
+        // Calculate fuel cost with efficiency
+        let efficiency = calculate_fuel_efficiency(&self.state, self.registry);
+        let fuel_cost = self.config.fuel_cost_with_efficiency(efficiency);
+
+        let fuel_id = ResourceId::new("fuel");
+        let current_fuel = self.state.resource(&fuel_id);
+
+        if current_fuel < fuel_cost {
+            return Err(RuntimeError::InsufficientFuel {
+                required: fuel_cost,
+                available: current_fuel,
+            });
+        }
+
+        // Consume fuel
+        let mut events = vec![Event::resource_changed(
+            fuel_id,
+            current_fuel,
+            current_fuel - fuel_cost,
+            "journey fuel",
+        )];
+
+        // Set journey state
+        self.journey = Some(JourneyState::new(destination, event_count));
+
+        // Apply events
+        for event in &events {
+            self.state.apply_event(event, self.schema);
+        }
+        self.event_log.extend(events.clone());
+
+        Ok(events)
+    }
+
+    /// Process one tick of the journey (wear, decay, contract timers)
+    pub fn process_journey_tick(&mut self) -> Result<Vec<Event>, RuntimeError> {
+        let journey = self
+            .journey
+            .as_mut()
+            .ok_or(RuntimeError::NoJourneyInProgress)?;
+
+        let mut events = Vec::new();
+
+        // Process wear (supplies, hull)
+        events.extend(process_journey_wear(&self.state, &self.config));
+
+        // Process cargo decay
+        let (decay_events, _decayed) =
+            process_cargo_decay(&self.state, self.registry, &mut self.rng);
+        events.extend(decay_events);
+
+        // Tick contract timers
+        let (contract_events, _expired) = tick_contract_timers(&self.state, self.registry);
+        events.extend(contract_events);
+
+        // Consume journey event
+        journey.consume_event();
+
+        // Apply all events
+        let mut game_over = None;
+        for event in &events {
+            if let Some(reason) = self.state.apply_event(event, self.schema) {
+                game_over = Some(reason);
+            }
+        }
+        self.event_log.extend(events.clone());
+
+        if let Some(reason) = game_over {
+            return Err(RuntimeError::GameOver {
+                reason: format!("{:?}", reason),
+            });
+        }
+
+        Ok(events)
+    }
+
+    /// Complete the journey, arriving at destination
+    pub fn complete_journey(&mut self) -> Result<Vec<Event>, RuntimeError> {
+        let journey = self
+            .journey
+            .take()
+            .ok_or(RuntimeError::NoJourneyInProgress)?;
+
+        let events = vec![Event::location_changed(
+            self.state.location.clone(),
+            journey.destination,
+        )];
+
+        for event in &events {
+            self.state.apply_event(event, self.schema);
+        }
+        self.event_log.extend(events.clone());
+
+        Ok(events)
+    }
+
+    /// Check if a journey is in progress
+    pub fn is_journeying(&self) -> bool {
+        self.journey.is_some()
+    }
+
+    /// Get current journey state
+    pub fn journey(&self) -> Option<&JourneyState> {
+        self.journey.as_ref()
     }
 }

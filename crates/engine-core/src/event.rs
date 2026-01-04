@@ -110,6 +110,18 @@ pub enum Event {
     RngStateAdvanced {
         new_state: u64,
     },
+
+    CardConditionChanged {
+        instance_id: CardInstanceId,
+        old_condition: u32,
+        new_condition: u32,
+    },
+
+    CardCyclesUpdated {
+        instance_id: CardInstanceId,
+        old_cycles: Option<u32>,
+        new_cycles: Option<u32>,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -181,5 +193,29 @@ impl Event {
 
     pub fn game_over(reason: GameOverReason) -> Self {
         Event::GameOver { reason }
+    }
+
+    pub fn card_condition_changed(
+        instance_id: CardInstanceId,
+        old_condition: u32,
+        new_condition: u32,
+    ) -> Self {
+        Event::CardConditionChanged {
+            instance_id,
+            old_condition,
+            new_condition,
+        }
+    }
+
+    pub fn card_cycles_updated(
+        instance_id: CardInstanceId,
+        old_cycles: Option<u32>,
+        new_cycles: Option<u32>,
+    ) -> Self {
+        Event::CardCyclesUpdated {
+            instance_id,
+            old_cycles,
+            new_cycles,
+        }
     }
 }

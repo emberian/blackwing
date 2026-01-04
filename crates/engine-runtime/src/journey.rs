@@ -12,10 +12,7 @@ pub struct JourneyState {
 }
 
 impl JourneyState {
-    pub fn new(
-        destination: engine_core::LocationId,
-        event_count: u32,
-    ) -> Self {
+    pub fn new(destination: engine_core::LocationId, event_count: u32) -> Self {
         Self {
             destination,
             events_remaining: event_count,
@@ -58,10 +55,7 @@ pub fn calculate_fuel_efficiency(state: &GameState, registry: &dyn ContentRegist
 }
 
 /// Process journey wear (supplies consumption, hull degradation)
-pub fn process_journey_wear(
-    state: &GameState,
-    config: &GameConfig,
-) -> Vec<Event> {
+pub fn process_journey_wear(state: &GameState, config: &GameConfig) -> Vec<Event> {
     let mut events = Vec::new();
     let supplies_id = ResourceId::new("supplies");
     let hull_id = ResourceId::new("hull");
@@ -152,8 +146,12 @@ pub fn process_cargo_decay(
                 decayed_cards.push(card_def.name.clone());
                 events.push(Event::card_removed(inst_id, "decay"));
             } else {
-                // Card condition reduced - we'd need a CardConditionChanged event
-                // For now, we track this in the decayed_cards list
+                // Card condition reduced
+                events.push(Event::card_condition_changed(
+                    inst_id,
+                    instance.condition,
+                    new_condition,
+                ));
             }
         }
     }
@@ -211,9 +209,14 @@ pub fn tick_contract_timers(
                 key: SmolStr::new("contracts_failed"),
                 new_value: state.stat("contracts_failed") + 1,
             });
+        } else {
+            // Decrement cycles remaining
+            events.push(Event::card_cycles_updated(
+                contract_id.clone(),
+                Some(cycles_remaining),
+                Some(cycles_remaining - 1),
+            ));
         }
-        // Note: Decrementing cycles_remaining would require a new event type
-        // For now, we assume this is handled by the caller or a CardUpdated event
     }
 
     (events, expired_contracts)
@@ -225,10 +228,7 @@ mod tests {
 
     #[test]
     fn journey_state_progression() {
-        let mut journey = JourneyState::new(
-            engine_core::LocationId::new("test_port"),
-            3,
-        );
+        let mut journey = JourneyState::new(engine_core::LocationId::new("test_port"), 3);
         assert_eq!(journey.events_remaining, 3);
         assert!(!journey.is_complete());
 

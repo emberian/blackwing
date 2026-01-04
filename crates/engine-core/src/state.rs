@@ -22,6 +22,7 @@ pub struct GameState {
     pub chronicle: Vec<ChronicleEntry>,
     pub stats: FxHashMap<SmolStr, i64>,
     pub rng_state: u64,
+    pub active_scene: Option<SceneId>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -192,6 +193,7 @@ impl Default for GameState {
             chronicle: Vec::new(),
             stats: FxHashMap::default(),
             rng_state: 0,
+            active_scene: None,
         }
     }
 }
@@ -211,6 +213,7 @@ impl GameState {
             chronicle: Vec::new(),
             stats: FxHashMap::default(),
             rng_state: rng_seed,
+            active_scene: None,
         };
 
         for resource_def in &schema.resources {
@@ -327,10 +330,15 @@ impl GameState {
                 return Some(reason.clone());
             }
 
-            Event::SceneStarted { .. }
-            | Event::PassageEntered { .. }
-            | Event::ChoiceMade { .. }
-            | Event::SceneEnded { .. } => {}
+            Event::SceneStarted { scene_id } => {
+                self.active_scene = Some(scene_id.clone());
+            }
+
+            Event::SceneEnded { .. } => {
+                self.active_scene = None;
+            }
+
+            Event::PassageEntered { .. } | Event::ChoiceMade { .. } => {}
 
             Event::ChronicleAdded { entry } => {
                 self.chronicle.push(entry.clone());
@@ -364,6 +372,26 @@ impl GameState {
 
             Event::StatChanged { key, new_value } => {
                 self.stats.insert(key.clone(), *new_value);
+            }
+
+            Event::CardConditionChanged {
+                instance_id,
+                new_condition,
+                ..
+            } => {
+                if let Some(inst) = self.cards.instances.get_mut(instance_id) {
+                    inst.condition = *new_condition;
+                }
+            }
+
+            Event::CardCyclesUpdated {
+                instance_id,
+                new_cycles,
+                ..
+            } => {
+                if let Some(inst) = self.cards.instances.get_mut(instance_id) {
+                    inst.cycles_remaining = *new_cycles;
+                }
             }
         }
 

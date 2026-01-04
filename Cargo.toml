@@ -33,7 +33,7 @@ indexmap = { version = "2.0", features = ["serde"] }
 smallvec = { version = "1.11", features = ["serde"] }
 
 # Scripting
-rhai = { version = "1.19", features = ["sync", "serde"] }
+rhai = { version = "1.19", features = ["sync", "serde", "internals"] }
 
 # Analysis
 z3 = "0.12"

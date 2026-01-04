@@ -487,9 +487,11 @@ version = "0.1.0"
 dependencies = [
  "engine-core",
  "engine-runtime",
+ "engine-script",
  "holdsmith-compiler",
  "holdsmith-parser",
  "rayon",
+ "smol_str",
  "thiserror",
  "z3",
 ]

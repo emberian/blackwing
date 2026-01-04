@@ -91,4 +91,8 @@ pub enum RuntimeError {
     // === Script Errors ===
     #[error("script error: {message}")]
     ScriptError { message: String },
+
+    // === Journey Errors ===
+    #[error("no journey in progress")]
+    NoJourneyInProgress,
 }
