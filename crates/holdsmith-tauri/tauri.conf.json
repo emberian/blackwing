@@ -4,12 +4,13 @@
   "identifier": "com.blackwing.holdsmith",
   "version": "0.1.0",
   "build": {
-    "beforeDevCommand": "cd crates/holdsmith-app && trunk serve --port 1420",
+    "beforeDevCommand": "cd crates/holdsmith-app && trunk serve --port 1420 --features tauri",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "cd crates/holdsmith-app && trunk build --release",
+    "beforeBuildCommand": "cd crates/holdsmith-app && trunk build --release --features tauri",
     "frontendDist": "../holdsmith-app/dist"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Holdsmith IDE",

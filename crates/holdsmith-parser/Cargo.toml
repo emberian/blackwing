@@ -2,13 +2,15 @@
 name = "holdsmith-parser"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [dependencies]
 thiserror = { workspace = true }
 smol_str = { workspace = true }
 serde = { workspace = true }
-serde_yaml = "0.9"
-logos = "0.15"
+serde_yaml = { workspace = true }
+logos = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }

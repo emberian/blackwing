@@ -49,7 +49,9 @@ pub fn is_tauri_environment() -> bool {
 pub fn create_backend() -> Box<dyn Backend> {
     #[cfg(feature = "tauri")]
     if is_tauri_environment() {
+        web_sys::console::log_1(&"[holdsmith] Using TauriBackend".into());
         return Box::new(TauriBackend::new());
     }
+    web_sys::console::log_1(&"[holdsmith] Using LocalBackend".into());
     Box::new(LocalBackend::new())
 }

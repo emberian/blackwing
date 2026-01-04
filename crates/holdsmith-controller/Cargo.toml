@@ -2,6 +2,8 @@
 name = "holdsmith-controller"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
+authors.workspace = true
 
 [features]
 default = ["parallel"]
@@ -17,7 +19,7 @@ holdsmith-compiler = { path = "../holdsmith-compiler" }
 holdsmith-analyzer = { path = "../holdsmith-analyzer", default-features = false }
 
 # Virtual filesystem
-vfs = "0.12"
+vfs = { workspace = true }
 
 # Serialization (for project save/load)
 serde = { workspace = true }
@@ -30,4 +32,4 @@ thiserror = { workspace = true }
 smol_str = { workspace = true }
 
 # Zip support for project export/import (no zstd for WASM compatibility)
-zip = { version = "2.1", default-features = false, features = ["deflate"] }
+zip = { workspace = true }

@@ -23,6 +23,10 @@ pub fn main() {
     #[cfg(debug_assertions)]
     console_error_panic_hook::set_once();
 
+    web_sys::console::log_1(&"[holdsmith] WASM module loaded".into());
+
     // Mount the Leptos app
     leptos::mount::mount_to_body(App);
+
+    web_sys::console::log_1(&"[holdsmith] Leptos app mounted".into());
 }
