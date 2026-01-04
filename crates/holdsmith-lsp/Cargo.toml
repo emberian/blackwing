@@ -1,0 +1,22 @@
+[package]
+name = "holdsmith-lsp"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "holdsmith-lsp"
+path = "src/main.rs"
+
+[dependencies]
+holdsmith-parser = { path = "../holdsmith-parser" }
+holdsmith-compiler = { path = "../holdsmith-compiler" }
+holdsmith-analyzer = { path = "../holdsmith-analyzer" }
+tower-lsp = { workspace = true }
+tokio = { workspace = true }
+serde_json = { workspace = true }
+smol_str = { workspace = true }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
