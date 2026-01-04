@@ -1,0 +1,11 @@
+[package]
+name = "engine-script"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+rhai = { workspace = true }
+parking_lot = { workspace = true }
+thiserror = { workspace = true }
+smol_str = { workspace = true }

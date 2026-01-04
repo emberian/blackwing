@@ -1,0 +1,15 @@
+[package]
+name = "holdsmith-parser"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+thiserror = { workspace = true }
+smol_str = { workspace = true }
+serde = { workspace = true }
+serde_yaml = "0.9"
+logos = "0.15"
+chumsky = "0.10"
+
+[dev-dependencies]
+insta = { workspace = true }

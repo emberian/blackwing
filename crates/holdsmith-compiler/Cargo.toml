@@ -1,0 +1,10 @@
+[package]
+name = "holdsmith-compiler"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+holdsmith-parser = { path = "../holdsmith-parser" }
+thiserror = { workspace = true }
+smol_str = { workspace = true }

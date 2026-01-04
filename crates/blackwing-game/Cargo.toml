@@ -1,0 +1,8 @@
+[package]
+name = "blackwing-game"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+engine-runtime = { path = "../engine-runtime" }

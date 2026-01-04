@@ -1,0 +1,16 @@
+[package]
+name = "holdsmith-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "holdsmith"
+path = "src/main.rs"
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+holdsmith-parser = { path = "../holdsmith-parser" }
+holdsmith-compiler = { path = "../holdsmith-compiler" }
+holdsmith-analyzer = { path = "../holdsmith-analyzer" }
+clap = { workspace = true }
+anyhow = { workspace = true }

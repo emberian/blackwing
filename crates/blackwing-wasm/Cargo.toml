@@ -1,0 +1,12 @@
+[package]
+name = "blackwing-wasm"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+engine-runtime = { path = "../engine-runtime" }
+blackwing-game = { path = "../blackwing-game" }

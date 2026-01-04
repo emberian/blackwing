@@ -1,0 +1,12 @@
+[package]
+name = "engine-runtime"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+engine-script = { path = "../engine-script" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+rustc-hash = { workspace = true }
+smol_str = { workspace = true }
